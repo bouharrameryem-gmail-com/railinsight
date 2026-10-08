@@ -1,0 +1,85 @@
+[project]
+name = "railinsight"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Jonathan Fomekong", email = "jonathabachelard@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "numpy>=2.5.3",
+    "pandas>=3.0.6",
+    "plotly>=7.1.0",
+    "pyarrow>=25.0.1",
+    "pydeck>=0.9.3",
+    "requests>=2.34.2",
+    "scikit-learn>=1.9.1",
+    "scipy>=1.18.1",
+    "statsmodels>=0.15.0",
+    "streamlit>=1.64.0",
+]
+
+[project.scripts]
+railinsight = "railinsight:main"
+
+[build-system]
+requires = ["uv_build>=0.12.10,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "furo>=2025.12.19",
+    "interrogate>=1.7.0",
+    "jupyterlab>=4.6.4",
+    "missingno>=0.5.2",
+    "myst-parser>=5.1.0",
+    "pip-audit>=2.10.1",
+    "pre-commit>=4.6.2",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.9",
+    "seaborn>=0.13.2",
+    "sphinx>=9.1.0",
+]
+
+# specification of lintint tools
+[tool.ruff]
+line-length = 88   # Sets the maximum line length to 88 characters. This is the standard adopted by Black and modern PEP 8.
+target-version = "py314"   # Tells Ruff that the code targets Python 3.12. It will adjust its analysis rules and suggest syntax suitable for that version.
+src = ["src", "tests"]   # Specify to Ruff where your project's source files are located.
+
+[tool.ruff.lint]
+# E/W: pycodestyle (PEP 8), F: pyflakes, I: isort, N: naming,
+# D: pydocstyle (docstrings), UP: pyupgrade, B: bugbear,
+# S: bandit (security), ANN: type annotations
+select = ["E", "W", "F", "I", "N", "UP", "B", "S"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "D", "ANN"]   # assert is fine in tests
+"notebooks/**" = ["D", "ANN", "E402"]
+"docs/**" = ["D", "ANN"]
+
+# Documentation cover
+[tool.interrogate]
+#fail-under = 100
+exclude = ["tests", "docs", "notebooks"] 
+ignore-init-method = true   # Does not require a dedicated docstring for __init__ methods (the class docstring suffices).
+verbose = 1   # Medium level of detail in the command's console output
+
+# Test configuration
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"   # Default options applied to the pytest command
+
+# configuration of code coverage
+[tool.coverage.run]
+source = ["railinsight"]   # Measures code coverage only for the package/module named railinsight.
+branch = true   # Verify that each conditional branch (if/else) is executed in both directions
+
+[tool.coverage.report]
+show_missing = true   # Displays the exact line numbers in the final report that were not executed by the tests
+exclude_also = ["if __name__ == .__main__.:", "if TYPE_CHECKING:"]   # excludes those two from the coverage calculation
