@@ -35,7 +35,7 @@ jobs:
 
       - name: Install Python and dependencies from the lockfile
         run: |
-          uv python install
+          uv python install 3.14
           uv sync --locked --all-groups
 
 #      - name: PEP 8, docstring style and security rules
