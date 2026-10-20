@@ -1,90 +1,141 @@
 # RailInsight
 
-Streamlit application and data analysis of SNCF TGV punctuality (open data).
+Streamlit web application for exploring SNCF TGV punctuality data (open data, 2018 – present).
+
+Built as part of a data science project at Télécom Paris — analysing monthly regularity per route to answer five questions around the theme of **reliability**.
+
+---
+
+## Data source
+
+**SNCF — Régularité mensuelle TGV (AQST)**
+[ressources.data.sncf.com](https://ressources.data.sncf.com/explore/dataset/regularite-mensuelle-tgv-aqst/)
+
+One row = one month × one route (departure → arrival). ~13 000 rows, 2018-01 → present.
+See `DATASHEET.md` for full documentation of the dataset and its limitations.
+
+---
+
+## Analyses
+
+| # | Question | Author |
+|---|---|---|
+| 1 | Which routes are least reliable, and is this worsening over time? | Michelle |
+| 2 | Which departure stations concentrate delays vs. cascade victims? | Éric |
+| **3** | **Can routes be clustered by punctuality profile?** | **Bachelard** |
+| 4 | Reliability score per route, mapped on the network | Meryem |
+| 5 | Predicting delay > 15 / 30 min from month and route | — |
+
+---
 
 ## Project structure
 
-
 ```
 .
-├── app.py                      # Streamlit entrypoint (navigation only)
+├── app.py                      # Streamlit entry point (navigation only)
 ├── .streamlit/config.toml      # Streamlit server/client configuration
 ├── data/
-│   ├── raw/                    # Source datasets, never modified
-│   └── processed/              # Cleaned / derived datasets
-├── models/                     # Trained model files produced by analysis
-├── notebooks/                  # Exploratory analysis (Jupyter)
+│   ├── raw/                    # Source CSV, never modified
+│   └── processed/              # Cleaned / derived parquet files
+├── models/                     # Trained model artefacts
+├── notebooks/                  # Exploratory analysis (Jupyter, standalone)
 ├── docs/                       # Sphinx documentation
-├── logs/                       # Runtime logs
+├── logs/                       # Runtime logs (debug.log, errors.log)
 ├── src/railinsight/
-│   ├── config.py               # Paths, settings
-│   ├── exceptions.py           # Project-specific exceptions
-│   ├── logging_config.py       # Logging setup
-│   ├── analysis/               # Data analysis: cleaning, statistics, model training
-│   ├── backend/                # Application business logic used by the UI
-│   ├── viz/                    # Figure builders (Plotly)
+│   ├── config.py               # Paths, column mapping, constants
+│   ├── exceptions.py           # Custom exceptions
+│   ├── logging_config.py       # Two rotating file handlers + console
+│   ├── analysis/               # Feature engineering, clustering, models
+│   ├── backend/                # Business logic called by UI (no Streamlit)
+│   ├── viz/                    # Plotly figure builders (reusable in notebooks)
 │   ├── utils/                  # Generic helpers
 │   └── ui/
-│       ├── pages/              # Streamlit pages
+│       ├── pages/              # One file per page, no business logic
 │       └── components/         # Reusable Streamlit widgets
 └── tests/railinsight/          # Mirrors src/railinsight/
 ```
 
+### Dependency rules
+
+```
+ui → backend → analysis
+         ↑          ↑
+        viz        utils
+```
+
+Only `ui` may import Streamlit. `analysis` and `viz` must run in notebooks without Streamlit.
+
+---
+
 ## Layers
 
-Dependencies flow one way: `ui → backend → analysis`, with `viz` and `utils` usable everywhere.
-Only the `ui` package imports Streamlit.
+### `notebooks/`
+Standalone EDA notebooks — no imports from the package. Run them to explore the data.
+Once an approach is validated, port the logic to `analysis/`.
 
-### `notebooks/` and `railinsight.analysis`
-
-* Explore the data in `notebooks/`
-* Move reusable code (cleaning, feature engineering, model training/evaluation) into `analysis`
-* Writes cleaned data to `data/processed/` and trained models to `models/`
-* Does not import Streamlit; tested with pytest on small DataFrames
+### `railinsight.analysis`
+Feature engineering, clustering, model training. Writes to `data/processed/` and `models/`.
+No Streamlit dependency; unit-tested with pytest on small DataFrames.
 
 ### `railinsight.backend`
-
-* Business logic of the application: loads processed data and models, computes what the pages display
-* Does not import Streamlit; tested with pytest
+Loads processed data and models, computes what the UI pages display.
+No Streamlit dependency; unit-tested with pytest.
 
 ### `railinsight.ui.pages`
-
-* One file per page, suffix `_page.py`
-* No business logic: delegate to `backend`, shared widgets to `ui.components`
-* Tested with Streamlit `AppTest` and mocked backend
-
-### `railinsight.ui.components`
-
-* Reusable UI widgets, encapsulate `st.session_state` handling
-* Tested with Streamlit `AppTest`
+One file per page (e.g. `punctuality_profiles.py`). Single `render()` entry point per file.
+No business logic — delegate everything to `backend`. Shared widgets go in `ui.components`.
 
 ### `railinsight.viz`
-
-* Functions returning Plotly figures from DataFrames
-* Does not import Streamlit, so figures are reusable in notebooks
+Functions that take a DataFrame and return a Plotly figure.
+No Streamlit import, so figures are reusable in notebooks too.
 
 ### `railinsight.utils`
+Generic helpers (date parsing, formatting…). No mocks needed in tests.
 
-* Generic helpers, tested with pytest without mocks
+---
 
 ## Local development
 
+**Prerequisites**: Python ≥ 3.14, [uv](https://docs.astral.sh/uv/)
+
 ```shell
+# Install dependencies
 uv sync
-```
 
-```shell
+# Run the app
 uv run streamlit run app.py
-```
 
-```shell
+# Lint
 uv run ruff check .
-```
-
-```shell
 uv run ruff format --check .
+
+# Tests + coverage
+uv run pytest --cov=railinsight --cov-report=term-missing
 ```
 
+### Jupyter notebooks
+
 ```shell
-uv run pytest
+uv run jupyter lab
 ```
+
+Notebooks live in `notebooks/`. They read raw data from `data/raw/` via relative paths
+and do not import the `railinsight` package.
+
+---
+
+## Deployment
+
+The app is deployed on **Streamlit Cloud**.
+
+1. Push to `main`.
+2. Streamlit Cloud picks up `app.py` automatically.
+3. Set the `RAILINSIGHT_DATA_PATH` secret if the CSV is not bundled in the repo.
+
+---
+
+## Contributing
+
+- Work on a feature branch, open a PR against `main`.
+- CI checks: ruff lint, docstring coverage (interrogate), pytest ≥ 90 % coverage.
+- See `.github/pull_request_template.md` for the PR checklist.
