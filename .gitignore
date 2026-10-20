@@ -221,3 +221,6 @@ __marimo__/
 *.md
 !DATASHEET.md
 !README.md
+
+# draft files
+notebooks/Q3_01*
