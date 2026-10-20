@@ -15,8 +15,8 @@ on:
     branches:
       - main
 
-#permissions:
-#  contents: read
+permissions:
+  contents: read
 
 #concurrency:
 #  group: ci-${{ github.ref }}
