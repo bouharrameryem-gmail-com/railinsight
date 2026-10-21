@@ -63,10 +63,11 @@ jobs:
             --ignore-vuln CVE-2026-112395 \
             --ignore-vuln CVE-2026-112404 \
             --ignore-vuln CVE-2026-112899
-          # Pillow 12.3.0 (transitive via matplotlib/streamlit) has 8 known CVEs
-          # whose fix (13.0.0) is not yet published on PyPI. Ignored temporarily;
-          # remove these --ignore-vuln flags once Pillow 13.0.0 is available and
-          # `uv lock --upgrade-package pillow` picks it up.
+          # Pillow 12.3.0 (transitive via streamlit/matplotlib) has 8 known CVEs
+          # fixed in 13.0.0 (now published on PyPI), but every streamlit release
+          # up to 1.66.0 still pins `pillow<13`, so it cannot be upgraded yet.
+          # Remove these --ignore-vuln flags once a streamlit release allows
+          # pillow>=13 and `uv lock --upgrade-package pillow` picks it up.
 
 #      - name: Build documentation (warnings are errors)
 #        run: uv run sphinx-build -W -b html docs/source docs/build/html
