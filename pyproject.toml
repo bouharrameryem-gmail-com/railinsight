@@ -77,7 +77,7 @@ addopts = "-ra --strict-markers"   # Default options applied to the pytest comma
 
 # configuration of code coverage
 [tool.coverage.run]
-source = ["railinsight"]   # Measures code coverage only for the package/module named railinsight.
+source = ["src/railinsight"]   # Measures code coverage only for the package/module named railinsight.
 branch = true   # Verify that each conditional branch (if/else) is executed in both directions
 
 [tool.coverage.report]
