@@ -54,7 +54,7 @@ jobs:
       - name: Dependency vulnerability audit
         run: |
           uv export --no-dev --no-hashes --no-emit-project --format requirements-txt > /tmp/requirements.txt
-          uvx pip-audit -r /tmp/requirements.txt
+          uvx pip-audit -r /tmp/requirements.txt --no-deps --disable-pip
 
 #      - name: Build documentation (warnings are errors)
 #        run: uv run sphinx-build -W -b html docs/source docs/build/html
