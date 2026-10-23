@@ -226,3 +226,50 @@ __marimo__/
 notebooks/Q3_0*
 notebooks/Q3_data*
 notebooks/Q3_old*
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# --- Virtual environments (uv creates .venv) ---
+.venv/
+venv/
+
+# --- Tool caches ---
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- Secrets and local configuration ---
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# --- Data: keep the folders, ignore the contents ---
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# --- Logs ---
+logs/*
+!logs/.gitkeep
+
+# --- Models (only if you ever store trained models) ---
+models/*
+!models/.gitkeep
+
+# --- Editors and operating systems ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
