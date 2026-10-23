@@ -49,7 +49,7 @@ jobs:
 #        run: uv run interrogate -c pyproject.toml src
 
 #      - name: Unit tests and coverage (>= 90%)
-#        run: uv run pytest --cov=railinsight --cov-report=term-missing --cov-report=xml --cov-fail-under=90
+#        run: uv run pytest --cov=src/railinsight --cov-report=term-missing --cov-report=xml --cov-fail-under=90
 
       - name: Dependency vulnerability audit
         run: |
