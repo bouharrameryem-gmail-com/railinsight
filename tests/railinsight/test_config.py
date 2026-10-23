@@ -23,9 +23,7 @@ def test_config_invalide_est_une_valueerror():
 
 def test_surcharge_partielle(tmp_path):
     defaut = charger_config(environ={})
-    cfg = charger_config(
-        ecrire(tmp_path, "score_fiabilite:\n  poids: 0.7"), environ={}
-    )
+    cfg = charger_config(ecrire(tmp_path, "score_fiabilite:\n  poids: 0.7"), environ={})
     assert cfg.score_fiabilite.poids == 0.7
     assert cfg.score_fiabilite.min_trains == defaut.score_fiabilite.min_trains
 

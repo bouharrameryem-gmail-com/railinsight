@@ -61,7 +61,9 @@ def verifier_periode(cle: str, valeur: object) -> None:
     if valeur is not None and not (
         isinstance(valeur, str) and _PERIODE.fullmatch(valeur)
     ):
-        raise ConfigInvalide(f"'{cle}' doit valoir null ou 'AAAA-MM', reçu : {valeur!r}")
+        raise ConfigInvalide(
+            f"'{cle}' doit valoir null ou 'AAAA-MM', reçu : {valeur!r}"
+        )
 
 
 # ---------- les sections (une dataclass par bloc du YAML) ----------
@@ -149,7 +151,9 @@ def _lire(chemin: Path) -> dict:
         with open(chemin, encoding="utf-8") as f:
             contenu = yaml.safe_load(f)
     except FileNotFoundError:
-        raise ConfigInvalide(f"fichier de configuration introuvable : {chemin}") from None
+        raise ConfigInvalide(
+            f"fichier de configuration introuvable : {chemin}"
+        ) from None
     except yaml.YAMLError as erreur:
         raise ConfigInvalide(f"YAML invalide dans {chemin} : {erreur}") from None
 
