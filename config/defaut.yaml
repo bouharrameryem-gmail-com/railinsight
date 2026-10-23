@@ -1,0 +1,20 @@
+# Valeurs de référence du projet. Toute modification passe par ce fichier
+# (via une PR relue). Une section par analyse.
+
+graine: 42
+
+chemins:                      # relatifs à la racine du projet
+  donnees: data/raw/regularite-mensuelle-tgv-aqst.csv
+  traitees: data/processed
+  modeles: models
+
+# Analyse 4 : score de fiabilité (notebooks/score_fiabilite.ipynb)
+score_fiabilite:
+  periode_debut: null         # "AAAA-MM" entre guillemets, ou null = depuis le début
+  periode_fin: null           # "AAAA-MM" entre guillemets, ou null = jusqu'à la fin
+  min_trains: 100             # liaisons avec moins de trains prévus : ignorées
+  poids: 0.5                  # poids des annulations (0 à 1) ; retards = 1 - poids
+  cap_annulation: 6.0         # taux d'annulation (%) qui donne la pénalité maximale
+  cap_retard: 12.0            # retard moyen (min) qui donne la pénalité maximale
+  gare_a_suivre: null         # nom de gare pour zoomer le schéma, ou null = toutes
+  top_n: 10                   # taille des classements
