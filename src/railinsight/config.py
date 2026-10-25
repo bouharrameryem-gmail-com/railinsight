@@ -5,7 +5,6 @@ structure (dataclasses), les types et les règles de validation.
 """
 
 import os
-import re
 from dataclasses import dataclass, fields, is_dataclass
 from pathlib import Path
 from typing import get_type_hints
@@ -13,57 +12,15 @@ from typing import get_type_hints
 import yaml
 
 from railinsight.exceptions import ConfigInvalide
+from railinsight.utils.validation import (
+    verifier_entier,
+    verifier_nombre,
+    verifier_periode,
+)
 
 RACINE = Path(__file__).resolve().parents[2]  # racine du dépôt
 DEFAUT = RACINE / "config" / "defaut.yaml"
 
-_PERIODE = re.compile(r"\d{4}-(0[1-9]|1[0-2])")
-
-
-# ---------- outils de validation (à réutiliser dans vos sections) ----------
-
-
-def verifier_entier(cle: str, valeur: object, minimum: int | None = None) -> None:
-    """Exige un entier (booléen exclu), éventuellement >= minimum."""
-    if not isinstance(valeur, int) or isinstance(valeur, bool):
-        raise ConfigInvalide(f"'{cle}' doit être un entier, reçu : {valeur!r}")
-    if minimum is not None and valeur < minimum:
-        raise ConfigInvalide(f"'{cle}' doit être >= {minimum}, reçu : {valeur!r}")
-
-
-def verifier_nombre(
-    cle: str,
-    valeur: object,
-    *,
-    minimum: float | None = None,
-    maximum: float | None = None,
-    strict: bool = False,
-) -> None:
-    """Exige un nombre dans l'intervalle voulu (bornes exclues si strict)."""
-    if isinstance(valeur, bool) or not isinstance(valeur, int | float):
-        raise ConfigInvalide(f"'{cle}' doit être un nombre, reçu : {valeur!r}")
-    bas = minimum is None or (valeur > minimum if strict else valeur >= minimum)
-    haut = maximum is None or (valeur < maximum if strict else valeur <= maximum)
-    if not (bas and haut):
-        signe_bas, signe_haut = (">", "<") if strict else (">=", "<=")
-        regles = []
-        if minimum is not None:
-            regles.append(f"{signe_bas} {minimum}")
-        if maximum is not None:
-            regles.append(f"{signe_haut} {maximum}")
-        raise ConfigInvalide(
-            f"'{cle}' doit être {' et '.join(regles)}, reçu : {valeur!r}"
-        )
-
-
-def verifier_periode(cle: str, valeur: object) -> None:
-    """Exige null ou une chaîne 'AAAA-MM'."""
-    if valeur is not None and not (
-        isinstance(valeur, str) and _PERIODE.fullmatch(valeur)
-    ):
-        raise ConfigInvalide(
-            f"'{cle}' doit valoir null ou 'AAAA-MM', reçu : {valeur!r}"
-        )
 
 
 # ---------- les sections (une dataclass par bloc du YAML) ----------
@@ -129,7 +86,7 @@ class ScoreFiabilite:
         verifier_entier("score_fiabilite.top_n", self.top_n, minimum=1)
 
 
-# >>> Pour ajouter votre analyse : une dataclass ici (voir le guide d'équipe) <<<
+# >>> Pour ajouter votre analyse : une dataclass ici <<<
 
 
 @dataclass(frozen=True)

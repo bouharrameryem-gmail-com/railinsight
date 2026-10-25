@@ -55,6 +55,8 @@ src = ["src", "tests"]   # Specify to Ruff where your project's source files are
 # D: pydocstyle (docstrings), UP: pyupgrade, B: bugbear,
 # S: bandit (security), ANN: type annotations
 select = ["E", "W", "F", "I", "N", "UP", "B", "S"]
+# N818 : nos exceptions ont des noms français (ConfigInvalide), sans suffixe Error
+ignore = ["N818"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -74,8 +76,7 @@ verbose = 1   # Medium level of detail in the command's console output
 # Test configuration
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra --strict-markers"   # Default options applied to the pytest command
-
+addopts = "-ra --strict-markers --import-mode=importlib" # Default options applied to the pytest command 
 # configuration of code coverage
 [tool.coverage.run]
 source = ["railinsight"]   # Measures code coverage only for the package/module named railinsight.
