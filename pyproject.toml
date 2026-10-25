@@ -44,6 +44,9 @@ dev = [
     "sphinx>=9.1.0",
 ]
 
+[tool.uv]
+override-dependencies = ["pillow>=13.0.0"]
+
 # specification of lintint tools
 [tool.ruff]
 line-length = 88   # Sets the maximum line length to 88 characters. This is the standard adopted by Black and modern PEP 8.
