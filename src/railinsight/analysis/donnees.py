@@ -90,6 +90,23 @@ SCHEMA: tuple[Colonne, ...] = (
 )
 
 
+def comparer_colonnes(chemin: str | Path) -> tuple[list[str], list[str]]:
+    """Compare les en-têtes réels du fichier au SCHEMA (reconnaissance tolérante).
+
+    Utile pour découvrir un nouvel export ou compléter le schéma.
+
+    Returns:
+        (hors_schema, manquantes) : colonnes du fichier que le schéma ignore, puis
+        colonnes du schéma (nom CSV) absentes du fichier.
+    """
+    en_tetes = list(_lire_csv(chemin).columns)
+    vus = {normaliser(nom) for nom in en_tetes}
+    connus = {normaliser(c.source) for c in SCHEMA}
+    hors_schema = [nom for nom in en_tetes if normaliser(nom) not in connus]
+    manquantes = [c.source for c in SCHEMA if normaliser(c.source) not in vus]
+    return hors_schema, manquantes
+
+
 def normaliser(texte: str) -> str:
     """Minuscules, sans accents, ponctuation et espaces réduits à un espace.
 

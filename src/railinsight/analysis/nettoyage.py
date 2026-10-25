@@ -1,198 +1,214 @@
-"""Nettoyage du DataFrame renvoyé par `lire_donnees`.
+"""Nettoyage des données de régularité : fonctions pures, idempotentes, vectorisées.
 
-Chaque règle est une fonction pure : elle ne modifie pas son entrée, elle est
-idempotente (l'appliquer deux fois donne le même résultat que l'appliquer une
-fois) et vectorisée. `nettoyer` les enchaîne.
+Deux familles de fonctions :
 
+- des outils génériques, utilisables sur n'importe quelle colonne
+  (normaliser_nom, convertir_mois, taux, invalider_hors_bornes, retirer_doublons,
+  filtrer_periode, retirer_sans_train) ;
+
+Chaque fonction ne modifie pas son argument, accepte sa propre sortie
+(f(f(x)) == f(x)) et n'utilise aucune boucle Python. Les données arrivent de
+railinsight.analysis.donnees.lire_donnees, avec les noms de colonnes du SCHEMA.
 """
 
 import logging
 
 import pandas as pd
 
-from railinsight.analysis.donnees import NOMBRE, SCHEMA
-from railinsight.exceptions import ConfigInvalide, DonneesInvalides
+from railinsight.exceptions import DonneesInvalides
 
 logger = logging.getLogger(__name__)
 
-# Traitements possibles d'une valeur négative (impossible pour un compte ou un retard).
-MODES_NEGATIFS = ("nan", "garder", "supprimer")
+# Espaces ordinaires + insécable (U+00A0) + fine insécable (U+202F). Le motif contient
+# les vrais caractères : pandas 3 utilise pyarrow, dont le moteur refuse « \u00a0 ».
+ESPACES = "[\\s\u00a0\u202f]+"
+COLONNES_REQUISES = (
+    "date",
+    "gare_depart",
+    "gare_arrivee",
+    "prevus",
+    "annules",
+    "retard_moyen_arrivee",
+)
 
-COLONNES_NOMBRES = tuple(c.nom for c in SCHEMA if c.genre == NOMBRE)
+
+# ---------- outils génériques ----------
 
 
-def normaliser_gare(serie: pd.Series) -> pd.Series:
-    """Espaces réduits, casse « Titre » : « PARIS  LYON » -> « Paris Lyon »."""
-    return serie.str.split().str.join(" ").str.title()
+def normaliser_nom(serie: pd.Series) -> pd.Series:
+    """Texte sans espaces superflus, en MAJUSCULES (la convention du fichier source).
 
-
-def convertir_dates(df: pd.DataFrame) -> pd.DataFrame:
-    """Convertit `date` (texte AAAA-MM) en datetime et ajoute `mois` (texte AAAA-MM).
-
-    `date` vaut le premier jour du mois. Les lignes sans date valide sont retirées.
+    « Lyon  part-dieu » devient « LYON PART-DIEU ». La mise en forme pour
+    l'affichage (« Lyon Part-Dieu ») est l'affaire de la couche viz.
     """
-    df = df.copy()
-    if not pd.api.types.is_datetime64_any_dtype(df["date"]):
-        df["date"] = pd.to_datetime(df["date"], format="%Y-%m", errors="coerce")
-    invalides = df["date"].isna()
-    if invalides.any():
-        logger.warning("%d ligne(s) sans date valide retirée(s)", invalides.sum())
-        df = df[~invalides].copy()
-    df["mois"] = df["date"].dt.strftime("%Y-%m")
-    return df
+    return serie.str.replace(ESPACES, " ", regex=True).str.strip().str.upper()
 
 
-def normaliser_gares(df: pd.DataFrame) -> pd.DataFrame:
-    """Normalise les noms de gares et ajoute la liaison non orientée.
+def convertir_mois(serie: pd.Series) -> pd.Series:
+    """Mois « AAAA-MM » en date (premier jour du mois) ; illisible : NaT.
 
-    Ajoute `gare_a` et `gare_b` (les deux gares dans l'ordre alphabétique, donc
-    Paris -> Lyon et Lyon -> Paris donnent la même liaison) et `liaison`
-    (« gare_a - gare_b »). Les lignes sans nom de gare sont retirées.
+    Accepte une série déjà convertie. Les valeurs devenues illisibles sont comptées.
     """
-    df = df.copy()
-    for colonne in ("gare_depart", "gare_arrivee"):
-        df[colonne] = normaliser_gare(df[colonne])
-
-    sans_gare = (
-        df["gare_depart"].isna()
-        | df["gare_arrivee"].isna()
-        | (df["gare_depart"] == "")
-        | (df["gare_arrivee"] == "")
-    )
-    if sans_gare.any():
-        logger.warning("%d ligne(s) sans nom de gare retirée(s)", sans_gare.sum())
-        df = df[~sans_gare].copy()
-
-    depart, arrivee = df["gare_depart"], df["gare_arrivee"]
-    df["gare_a"] = depart.where(depart <= arrivee, arrivee)
-    df["gare_b"] = arrivee.where(depart <= arrivee, depart)
-    df["liaison"] = df["gare_a"] + " - " + df["gare_b"]
-    return df
+    if pd.api.types.is_datetime64_any_dtype(serie):
+        return serie
+    texte = serie.astype("string").str.strip()
+    dates = pd.to_datetime(texte, format="%Y-%m", errors="coerce")
+    perdues = int(dates.isna().sum() - serie.isna().sum())
+    if perdues:
+        logger.warning("%d mois illisible(s) remplacé(s) par NaT", perdues)
+    return dates
 
 
-def retirer_sans_circulation(df: pd.DataFrame) -> pd.DataFrame:
-    """Retire les lignes sans train prévu (`prevus` nul ou manquant).
+def taux(
+    numerateur: pd.Series, denominateur: pd.Series, pour: float = 100.0
+) -> pd.Series:
+    """Rapport multiplié par `pour` (100 : pourcentage) ; dénominateur nul : NaN.
 
-    Elles rendraient tout taux impossible à calculer (division par zéro).
+    Évite la division par zéro : 0 train prévu ne donne ni infini ni erreur.
     """
-    sans_train = ~(df["prevus"] > 0)
-    if sans_train.any():
-        logger.warning("%d ligne(s) sans train prévu retirée(s)", sans_train.sum())
-    return df[~sans_train].copy()
+    return numerateur / denominateur.where(denominateur != 0) * pour
 
 
-def traiter_negatifs(df: pd.DataFrame, mode: str = "nan") -> pd.DataFrame:
-    """Traite les valeurs négatives des colonnes numériques (impossibles).
+def invalider_hors_bornes(
+    serie: pd.Series, minimum: float | None = None, maximum: float | None = None
+) -> pd.Series:
+    """Remplace par NaN les valeurs hors de [minimum, maximum] ; la ligne est gardée.
 
-    Args:
-        df: données lues.
-        mode: "nan" met ces valeurs à NaN ; "garder" les conserve ; "supprimer"
-            retire la ligne entière.
-
-    Returns:
-        Un DataFrame avec une colonne booléenne `anomalie_negative` : vraie pour
-        les lignes qui avaient au moins une valeur négative, quel que soit le mode.
-
-    Raises:
-        ConfigInvalide: mode inconnu.
+    Les valeurs manquantes restent manquantes. Le nombre de valeurs remplacées est
+    journalisé : chaque analyse décide elle-même de ses bornes.
     """
-    if mode not in MODES_NEGATIFS:
-        raise ConfigInvalide(
-            f"mode inconnu pour les valeurs négatives : {mode!r} "
-            f"(attendu : {', '.join(MODES_NEGATIFS)})"
+    hors = pd.Series(False, index=serie.index)
+    if minimum is not None:
+        hors |= serie < minimum
+    if maximum is not None:
+        hors |= serie > maximum
+    if hors.any():
+        logger.warning(
+            "colonne %r : %d valeur(s) hors de [%s, %s] remplacée(s) par NaN",
+            serie.name,
+            int(hors.sum()),
+            minimum,
+            maximum,
         )
-    df = df.copy()
-    colonnes = list(COLONNES_NOMBRES)
-    negatifs = df[colonnes] < 0
-    par_colonne = negatifs.sum()
-    par_colonne = par_colonne[par_colonne > 0]
-    if not par_colonne.empty:
-        detail = ", ".join(f"{nom}={n}" for nom, n in par_colonne.items())
-        logger.warning("valeurs négatives (mode %s) : %s", mode, detail)
-
-    ligne = negatifs.any(axis=1)
-    if "anomalie_negative" in df.columns:
-        ligne = ligne | df["anomalie_negative"].astype(bool)
-    df["anomalie_negative"] = ligne
-
-    if mode == "nan":
-        df[colonnes] = df[colonnes].mask(negatifs)
-    elif mode == "supprimer":
-        df = df[~negatifs.any(axis=1)].copy()
-    return df
+    return serie.mask(hors)
 
 
-def ajouter_indicateurs(df: pd.DataFrame) -> pd.DataFrame:
-    """Ajoute les colonnes dérivées communes à toutes les analyses.
+def retirer_doublons(df: pd.DataFrame, cle: list[str]) -> pd.DataFrame:
+    """Une ligne par clé : la dernière du fichier gagne."""
+    unique = df.drop_duplicates(subset=cle, keep="last").reset_index(drop=True)
+    retirees = len(df) - len(unique)
+    if retirees:
+        logger.warning(
+            "%d ligne(s) en double retirée(s) (clé : %s)", retirees, ", ".join(cle)
+        )
+    return unique
 
-    - `circules` : trains partis (prévus - annulés, jamais négatif) ;
-    - `taux_annulation` : annulés / prévus, en % ;
-    - `minutes_retard` : retard moyen à l'arrivée x trains circulés. C'est ce
-      total qu'on additionne : une somme de moyennes n'est pas une moyenne ;
-    - `circules_mesures` : trains circulés dont le retard est connu. C'est le
-      bon dénominateur d'un retard moyen (le retard peut être NaN).
+
+def filtrer_periode(
+    df: pd.DataFrame,
+    debut: str | None = None,
+    fin: str | None = None,
+    colonne: str = "mois",
+) -> pd.DataFrame:
+    """Garde les lignes dont le mois est entre `debut` et `fin` (« AAAA-MM », inclus).
+
+    None = pas de borne. Une ligne sans mois est écartée dès qu'une borne est donnée.
     """
-    df = df.copy()
-    df["circules"] = (df["prevus"] - df["annules"]).clip(lower=0)
-    df["taux_annulation"] = df["annules"] / df["prevus"] * 100
-    df["minutes_retard"] = df["retard_moyen_arrivee"] * df["circules"]
-    df["circules_mesures"] = df["circules"].where(
-        df["retard_moyen_arrivee"].notna(), 0.0
+    garder = pd.Series(True, index=df.index)
+    if debut:
+        garder &= df[colonne] >= debut
+    if fin:
+        garder &= df[colonne] <= fin
+    return df[garder].reset_index(drop=True)
+
+
+# ---------- règles propres au jeu de données ----------
+
+
+def ajouter_liaison(
+    df: pd.DataFrame, depart: str = "gare_depart", arrivee: str = "gare_arrivee"
+) -> pd.DataFrame:
+    """Ajoute gare_a, gare_b (ordre alphabétique) et liaison (« A - B »).
+
+    Une liaison est une paire de gares dont l'ordre n'a pas d'importance :
+    Paris -> Lyon et Lyon -> Paris donnent la même gare_a, gare_b et liaison.
+    """
+    resultat = df.copy()
+    a_avant = df[depart] <= df[arrivee]
+    resultat["gare_a"] = df[depart].where(a_avant, df[arrivee])
+    resultat["gare_b"] = df[arrivee].where(a_avant, df[depart])
+    resultat["liaison"] = resultat["gare_a"] + " - " + resultat["gare_b"]
+    return resultat
+
+
+def ajouter_minutes_retard(
+    df: pd.DataFrame, retard_moyen: str = "retard_moyen_arrivee"
+) -> pd.DataFrame:
+    """Ajoute circules, minutes_retard et circules_mesures pour additionner des mois.
+
+    La somme de moyennes n'est pas une moyenne : on reconvertit chaque retard
+    moyen en minutes (moyenne x trains circulés), on additionne les minutes et
+    les trains, puis on divise à la fin.
+
+    `circules_mesures` ne compte que les trains dont le retard est connu : pour une
+    moyenne, divisez minutes_retard par circules_mesures et non par circules, sinon
+    une ligne au retard manquant fausserait le résultat.
+    """
+    resultat = df.copy()
+    resultat["circules"] = resultat["prevus"] - resultat["annules"]
+    resultat["minutes_retard"] = resultat[retard_moyen] * resultat["circules"]
+    resultat["circules_mesures"] = resultat["circules"].where(
+        resultat["minutes_retard"].notna()
     )
-    return df
+    return resultat
 
 
-def nettoyer(df: pd.DataFrame, negatifs: str = "nan") -> pd.DataFrame:
-    """Applique toutes les règles de nettoyage, dans l'ordre.
+def retirer_sans_train(df: pd.DataFrame, colonne: str = "prevus") -> pd.DataFrame:
+    """Retire les lignes sans train prévu (prevus <= 0 ou manquant).
 
-    Args:
-        df: DataFrame renvoyé par `lire_donnees`.
-        negatifs: traitement des valeurs négatives (voir `traiter_negatifs`).
-
-    Returns:
-        Un nouveau DataFrame trié par date et liaison, avec les colonnes de
-        `lire_donnees` plus `mois`, `gare_a`, `gare_b`, `liaison`,
-        `anomalie_negative`, `circules`, `taux_annulation`, `minutes_retard`
-        et `circules_mesures`.
-
-    Raises:
-        DonneesInvalides: colonnes de `lire_donnees` manquantes.
-        ConfigInvalide: mode `negatifs` inconnu.
+    À appeler explicitement : c'est une décision d'analyse, utile quand on calcule
+    des taux, inutile quand on additionne des volumes.
     """
-    manquantes = [c.nom for c in SCHEMA if c.nom not in df.columns]
+    sans_train = ~(df[colonne] > 0)
+    if sans_train.any():
+        logger.info("%d ligne(s) sans train prévu retirée(s)", int(sans_train.sum()))
+    return df[~sans_train].reset_index(drop=True)
+
+
+def _exiger_colonnes(df: pd.DataFrame, colonnes: tuple[str, ...]) -> None:
+    """Nomme toutes les colonnes manquantes d'un coup (pas un KeyError isolé)."""
+    manquantes = [c for c in colonnes if c not in df.columns]
     if manquantes:
-        raise DonneesInvalides("colonnes manquantes : " + ", ".join(manquantes))
-
-    propre = (
-        df.pipe(convertir_dates)
-        .pipe(normaliser_gares)
-        .pipe(retirer_sans_circulation)
-        .pipe(traiter_negatifs, mode=negatifs)
-        .pipe(ajouter_indicateurs)
-        .sort_values(["date", "gare_depart", "gare_arrivee"], kind="stable")
-        .reset_index(drop=True)
-    )
-    logger.info("nettoyage : %d ligne(s) lues, %d conservées", len(df), len(propre))
-    return propre
+        raise DonneesInvalides(
+            "colonnes manquantes pour le nettoyage : " + ", ".join(manquantes)
+        )
 
 
-def diagnostiquer(df: pd.DataFrame) -> dict[str, int]:
-    """Compte les anomalies d'un DataFrame lu, sans rien modifier.
+def nettoyer_regularite(brut: pd.DataFrame) -> pd.DataFrame:
+    """Applique les règles communes, dans l'ordre ; ne modifie pas l'argument.
 
-    À lancer sur la sortie de `lire_donnees` (avant `nettoyer`), pour vérifier que
-    la DATASHEET décrit bien le fichier courant.
+    Ne supprime aucune ligne : retirer des lignes est une décision d'analyse, qui
+    revient à chacun (retirer_sans_train, filtrer_periode, un filtre sur `service`).
+
+    1. `date` convertie en vraie date, `mois` en texte « AAAA-MM » ;
+    2. noms de gares normalisés (espaces, MAJUSCULES) ;
+    3. les lignes en double sur (mois, gare_depart, gare_arrivee) sont signalées,
+       pas supprimées : le fichier peut légitimement en contenir ;
+    4. ajout de liaison, gare_a, gare_b, circules, minutes_retard et
+       circules_mesures.
     """
-    rapport = {
-        "lignes": len(df),
-        "mois_distincts": int(df["date"].nunique()),
-        "prevus_nul_ou_manquant": int((~(df["prevus"] > 0)).sum()),
-        "annules_superieur_prevus": int((df["annules"] > df["prevus"]).sum()),
-        "doublons_date_depart_arrivee": int(
-            df.duplicated(["date", "gare_depart", "gare_arrivee"]).sum()
-        ),
-    }
-    for nom in COLONNES_NOMBRES:
-        n = int((df[nom] < 0).sum())
-        if n:
-            rapport[f"negatif_{nom}"] = n
-    return rapport
+    _exiger_colonnes(brut, COLONNES_REQUISES)
+    df = brut.copy()
+    df["date"] = convertir_mois(df["date"])
+    df["mois"] = df["date"].dt.strftime("%Y-%m")
+    for colonne in ("gare_depart", "gare_arrivee"):
+        df[colonne] = normaliser_nom(df[colonne])
+
+    doublons = int(df.duplicated(subset=["mois", "gare_depart", "gare_arrivee"]).sum())
+    if doublons:
+        logger.warning(
+            "%d ligne(s) en double sur (mois, gare_depart, gare_arrivee), conservées",
+            doublons,
+        )
+
+    return ajouter_minutes_retard(ajouter_liaison(df))
