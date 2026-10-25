@@ -22,7 +22,6 @@ RACINE = Path(__file__).resolve().parents[2]  # racine du dépôt
 DEFAUT = RACINE / "config" / "defaut.yaml"
 
 
-
 # ---------- les sections (une dataclass par bloc du YAML) ----------
 
 
