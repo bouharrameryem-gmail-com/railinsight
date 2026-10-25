@@ -112,6 +112,10 @@ def _lire(chemin: Path) -> dict:
         ) from None
     except yaml.YAMLError as erreur:
         raise ConfigInvalide(f"YAML invalide dans {chemin} : {erreur}") from None
+    except (UnicodeDecodeError, OSError) as erreur:
+        raise ConfigInvalide(
+            f"fichier de configuration illisible ({chemin}) : {erreur}"
+        ) from erreur
 
     if contenu is None:
         return {}
