@@ -40,7 +40,7 @@ pages = [
         default=True,
     ),
     st.Page(
-        "src/railinsight/ui/pages/template_page.py",
+        "src/railinsight/ui/pages/components_demo.py",
         title="Page modèle",
         icon=":material/draft:",
     ),
@@ -56,17 +56,17 @@ pages = [
     #     title="Q2 — Gares responsables",
     #     icon=":material/alt_route:",
     # ),
-    # Q3 — Bachelard (décommenter quand prêt)
-    # st.Page(
-    #     "src/railinsight/ui/pages/q3_narrative.py",
-    #     title="Q3 — Profils de ponctualité",
-    #     icon=":material/scatter_plot:",
-    # ),
-    # st.Page(
-    #     "src/railinsight/ui/pages/q3_lab.py",
-    #     title="Q3 — Laboratoire",
-    #     icon=":material/science:",
-    # ),
+    # Q3 — Bachelard
+    st.Page(
+        "src/railinsight/ui/pages/q3_narrative.py",
+        title="Q3 — Profils de ponctualité",
+        icon=":material/scatter_plot:",
+    ),
+    st.Page(
+        "src/railinsight/ui/pages/q3_lab.py",
+        title="Q3 — Laboratoire",
+        icon=":material/science:",
+    ),
     # Q4 — Meryem
     # st.Page(
     #     "src/railinsight/ui/pages/q4_reliability_map.py",
