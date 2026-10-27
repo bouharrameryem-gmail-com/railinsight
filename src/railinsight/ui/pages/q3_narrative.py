@@ -180,9 +180,7 @@ class Q3NarrativePage(BasePage):
 
     def _get_controls(self) -> tuple[bool, int, int]:
         """Read widget values from session state (set by _render_controls)."""
-        adjust = st.session_state.get(
-            self._state.widget_key("adjust_duration"), True
-        )
+        adjust = st.session_state.get(self._state.widget_key("adjust_duration"), True)
         monthly = self._provider.load_clean_monthly()
         years = sorted(monthly["date"].dt.year.dropna().unique().astype(int).tolist())
         default_start = int(years[0]) if years else 2015

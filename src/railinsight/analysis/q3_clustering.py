@@ -620,7 +620,5 @@ def compute_ward_linkage(x_scaled: np.ndarray) -> np.ndarray:
         Each row: [child_a, child_b, distance, cluster_size].
     """
     if len(x_scaled) < 2:  # noqa: PLR2004
-        raise InsufficientDataError(
-            "Ward linkage requiert au moins 2 observations."
-        )
+        raise InsufficientDataError("Ward linkage requiert au moins 2 observations.")
     return linkage(x_scaled, method="ward")

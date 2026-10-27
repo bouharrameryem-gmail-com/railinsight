@@ -134,8 +134,7 @@ class Q3Config:
         valid_scalers = {"power", "standard"}
         if self.scaler not in valid_scalers:
             raise ConfigInvalide(
-                f"'q3.scaler' doit être l'un de {valid_scalers}, "
-                f"reçu : {self.scaler!r}"
+                f"'q3.scaler' doit être l'un de {valid_scalers}, reçu : {self.scaler!r}"
             )
 
 
