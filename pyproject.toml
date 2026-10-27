@@ -82,7 +82,7 @@ testpaths = ["tests"]
 addopts = "-ra --strict-markers --import-mode=importlib" # Default options applied to the pytest command 
 # configuration of code coverage
 [tool.coverage.run]
-source = ["railinsight"]   # Measures code coverage only for the package/module named railinsight.
+source = ["src/railinsight"]   # Measures code coverage only for the package/module named railinsight.
 branch = true   # Verify that each conditional branch (if/else) is executed in both directions
 
 [tool.coverage.report]
