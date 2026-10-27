@@ -38,6 +38,7 @@ from railinsight.ui.components.pca_panel import pca_panel
 from railinsight.ui.components.route_card import route_card
 from railinsight.ui.providers import get_provider
 from railinsight.ui.state.base_state import PageState
+from railinsight.ui.theme.css import inject_global_css
 from railinsight.ui.theme.tokens import CLUSTER_COLORS
 from railinsight.utils.formatting import fmt_number, fmt_pct
 
@@ -56,18 +57,20 @@ def _run_canonical_q3(
     exclusion: str,
     min_months: int,
     scaler_type: str,
+    adjust_duration: bool = True,
 ) -> dict:
-    """Run the fixed Q3 analysis with parameters from config/defaut.yaml.
+    """Run the Q3 analysis with given parameters.
 
-    Cached by (data, config) — reruns only when data or config changes.
+    Cached by all arguments — reruns only when data or config changes.
 
     Args:
-        monthly: Clean monthly DataFrame.
+        monthly: Clean monthly DataFrame (pre-filtered if period is set).
         network: Monthly network DataFrame.
         feature_set: Feature set key (v3/fixed/composite).
         exclusion: Month exclusion strategy (none/known/data).
         min_months: Minimum valid months per route.
         scaler_type: Scaling method (power/standard).
+        adjust_duration: Whether to correct for route duration before clustering.
 
     Returns:
         Dict with analysis results: features, labels, PCA, centroids, etc.
@@ -78,12 +81,14 @@ def _run_canonical_q3(
         exclusion=exclusion,
         min_months=min_months,
     )
-    features, _ = adjust_for_duration(features, FEATURE_SETS[feature_set])
+    if adjust_duration:
+        features, _ = adjust_for_duration(features, FEATURE_SETS[feature_set])
 
-    # Use adjusted columns when available, otherwise original
     display_cols = FEATURE_SETS[feature_set]
+    # When adjust_duration is True, use _adj columns if they exist
     input_cols = [
-        f"{c}_adj" if f"{c}_adj" in features.columns else c for c in display_cols
+        f"{c}_adj" if adjust_duration and f"{c}_adj" in features.columns else c
+        for c in display_cols
     ]
 
     x_df = features[input_cols].dropna()  # noqa: N806
@@ -173,15 +178,39 @@ class Q3NarrativePage(BasePage):
     def _cfg(self):
         return charger_config().q3
 
+    def _get_controls(self) -> tuple[bool, int, int]:
+        """Read widget values from session state (set by _render_controls)."""
+        adjust = st.session_state.get(
+            self._state.widget_key("adjust_duration"), True
+        )
+        monthly = self._provider.load_clean_monthly()
+        years = sorted(monthly["date"].dt.year.dropna().unique().astype(int).tolist())
+        default_start = int(years[0]) if years else 2015
+        default_end = int(years[-1]) if years else 2024
+        period = st.session_state.get(
+            self._state.widget_key("period"),
+            (default_start, default_end),
+        )
+        return bool(adjust), int(period[0]), int(period[1])
+
+    def _get_monthly_filtered(self, start_year: int, end_year: int) -> pd.DataFrame:
+        """Return monthly data filtered to [start_year, end_year]."""
+        monthly = self._provider.load_clean_monthly()
+        return monthly[monthly["date"].dt.year.between(start_year, end_year)]
+
     def _render_key_figures(self) -> None:
+        inject_global_css()
         cfg = self._cfg()
+        adjust, start_y, end_y = self._get_controls()
+        monthly = self._get_monthly_filtered(start_y, end_y)
         results = _run_canonical_q3(
-            self._provider.load_clean_monthly(),
+            monthly,
             self._provider.load_network_monthly(),
             cfg.feature_set,
             cfg.exclusion,
             cfg.min_months,
             cfg.scaler,
+            adjust_duration=adjust,
         )
         labels = results["labels"]
         sil = results["silhouette"]
@@ -210,31 +239,55 @@ class Q3NarrativePage(BasePage):
         kpi_row(cards)
 
     def _render_controls(self) -> None:
-        adjusted = st.toggle(
-            "Lecture à durée égale (ajusté)",
-            value=True,
-            key=self._state.widget_key("adjust_duration"),
-            help=(
-                "Les longues liaisons ont mécaniquement plus de retards. "
-                "Ce mode retire cet effet pour comparer les profils équitablement."
-            ),
-        )
+        monthly = self._provider.load_clean_monthly()
+        years = sorted(monthly["date"].dt.year.dropna().unique().astype(int).tolist())
+
+        col_toggle, col_period = st.columns([1, 2])
+        with col_toggle:
+            adjusted = st.toggle(
+                "Corrigé de la durée",
+                value=True,
+                key=self._state.widget_key("adjust_duration"),
+                help=(
+                    "Les longues liaisons ont mécaniquement plus de retards. "
+                    "Ce mode retire cet effet via régression OLS en espace log."
+                ),
+            )
+        with col_period:
+            if len(years) >= 2:
+                st.select_slider(
+                    "Période analysée",
+                    options=years,
+                    value=(years[0], years[-1]),
+                    key=self._state.widget_key("period"),
+                    help=(
+                        "Restreindre la période modifie quelles liaisons ont "
+                        "assez de mois valides et peut changer les profils."
+                    ),
+                )
         if adjusted:
             st.caption(
-                "Mode actif : les indicateurs sont corrigés de la durée du trajet. "
-                "Les profils reflètent le comportement de la liaison "
-                "indépendamment de sa distance."
+                "✓ Corrigé : les indicateurs sont ajustés pour la durée du trajet — "
+                "les profils comparent les liaisons à régularité « intrinsèque » égale."
+            )
+        else:
+            st.caption(
+                "✗ Brut : les longues liaisons accumulent plus de retards par nature. "
+                "Utile pour voir l'impact réel subi par les voyageurs."
             )
 
     def _render_body(self) -> None:
         cfg = self._cfg()
+        adjust, start_y, end_y = self._get_controls()
+        monthly = self._get_monthly_filtered(start_y, end_y)
         results = _run_canonical_q3(
-            self._provider.load_clean_monthly(),
+            monthly,
             self._provider.load_network_monthly(),
             cfg.feature_set,
             cfg.exclusion,
             cfg.min_months,
             cfg.scaler,
+            adjust_duration=adjust,
         )
         labels = results["labels"]
         cluster_names = results["cluster_names"]
