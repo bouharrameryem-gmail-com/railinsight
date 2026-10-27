@@ -11,11 +11,12 @@ Business logic and data loading belong in src/railinsight/, not here.
 import streamlit as st
 
 from railinsight.logging_config import setup_logging
+from railinsight.ui.theme.css import inject_global_css, sidebar_brand
 from railinsight.ui.theme.plotly_template import register_template
 
 st.set_page_config(
     page_title="RailInsight",
-    page_icon="",
+    page_icon="🚄",
     layout="wide",
     menu_items={
         "About": (
@@ -26,6 +27,8 @@ st.set_page_config(
 
 setup_logging()
 register_template()
+inject_global_css()
+sidebar_brand()
 
 # --- Page registry (ordered by question number) ----------------------------
 # Add a new st.Page here when a team member delivers their page.

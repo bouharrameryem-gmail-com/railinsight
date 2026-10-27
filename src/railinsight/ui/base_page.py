@@ -19,6 +19,7 @@ import streamlit as st
 
 from railinsight.exceptions import RailInsightError
 from railinsight.interfaces.data_protocols import DataProvider
+from railinsight.ui.theme.tokens import QUESTION_COLORS, SNCF_RED
 
 logger = logging.getLogger(__name__)
 
@@ -83,17 +84,38 @@ class BasePage(abc.ABC):
     # --- Fixed sections (override only _render_sources if really needed) -----
 
     def _render_header(self) -> None:
-        """Render the question header with number, title and author."""
-        col_title, col_author = st.columns([8, 2])
-        with col_title:
-            st.markdown(f"### Question {self.question_number} — {self.question_title}")
-        with col_author:
-            st.caption(f"Analyse : {self.author}")
-        st.divider()
+        """Render the question header with SNCF-branded accent and author badge."""
+        color = QUESTION_COLORS.get(self.question_number, SNCF_RED)
+        st.markdown(
+            '<div style="display:flex;align-items:flex-start;'
+            "justify-content:space-between;"
+            'border-bottom:2px solid #E8ECEF;padding-bottom:18px;margin-bottom:8px;">'
+            "<div>"
+            f'<div style="font-size:0.68rem;font-weight:700;color:{color};'
+            "text-transform:uppercase;letter-spacing:0.1em;"
+            f'margin-bottom:5px;">Question {self.question_number}</div>'
+            '<h2 style="margin:0;font-size:1.45rem;font-weight:800;'
+            'color:#1A1A2E;letter-spacing:-0.02em;">'
+            f"{self.question_title}</h2>"
+            "</div>"
+            f'<div style="background:{color};color:white;font-size:0.68rem;'
+            "font-weight:700;padding:5px 12px;border-radius:20px;"
+            'white-space:nowrap;margin-top:2px;letter-spacing:0.03em;">'
+            f"{self.author}</div>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
 
     def _render_sources(self) -> None:
         """Render the mandatory data-source footer."""
-        st.caption("Source : SNCF Open Data — Régularité mensuelle TGV (AQST)")
+        st.markdown(
+            '<div style="margin-top:32px;padding-top:16px;'
+            'border-top:1px solid #E8ECEF;">'
+            '<span style="font-size:0.72rem;color:#9BA3AE;">'
+            "Source : SNCF Open Data — Régularité mensuelle TGV (AQST)"
+            "</span></div>",
+            unsafe_allow_html=True,
+        )
 
     # --- Abstract sections (every subclass must implement these two) ---------
 
