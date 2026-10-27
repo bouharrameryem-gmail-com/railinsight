@@ -132,10 +132,9 @@ def build_q3_features(
     month_strs = monthly["date"].astype(str).str[:7]
     df = monthly[~month_strs.isin(excluded)].copy()
 
-    net_map = (
-        network.assign(month_str=network["date"].astype(str).str[:7])
-        .set_index("month_str")["late15_rate"]
-    )
+    net_map = network.assign(month_str=network["date"].astype(str).str[:7]).set_index(
+        "month_str"
+    )["late15_rate"]
 
     rows: list[dict] = []
     for route, grp in df.groupby("route"):
@@ -158,9 +157,7 @@ def build_q3_features(
         chronicity_val = float(np.nanmean(monthly_l15.values > net_vals))
 
         delay_weighted = (
-            float(
-                (grp["mean_delay_when_late"] * grp["late_arrival_trains"]).sum() / la
-            )
+            float((grp["mean_delay_when_late"] * grp["late_arrival_trains"]).sum() / la)
             if la > 0
             else 0.0
         )
@@ -226,14 +223,10 @@ def adjust_for_duration(
         rho, _ = spearmanr(log_dur[valid], features.loc[valid, col])
         if abs(float(rho)) < _DURATION_CORR_THRESHOLD:
             continue
-        slope = float(
-            np.polyfit(log_dur[valid], features.loc[valid, col], 1)[0]
-        )
+        slope = float(np.polyfit(log_dur[valid], features.loc[valid, col], 1)[0])
         slopes[col] = slope
         result[f"{col}_adj"] = features[col] - slope * (log_dur - mean_log_dur)
-        logger.debug(
-            "Adjusted %s for duration (ρ=%.2f, slope=%.4f)", col, rho, slope
-        )
+        logger.debug("Adjusted %s for duration (ρ=%.2f, slope=%.4f)", col, rho, slope)
 
     return result, slopes
 
@@ -325,9 +318,9 @@ def fit_clustering(
             n_clusters=k, n_init=n_init, random_state=random_state
         ).fit_predict(x_scaled)
     if algorithm == "ward":
-        return AgglomerativeClustering(
-            n_clusters=k, linkage="ward"
-        ).fit_predict(x_scaled)
+        return AgglomerativeClustering(n_clusters=k, linkage="ward").fit_predict(
+            x_scaled
+        )
     if algorithm == "gmm":
         gmm = GaussianMixture(
             n_components=k,
@@ -556,8 +549,7 @@ def compute_eta2(
             result[var] = 0.0
             continue
         within = sum(
-            float(np.var(v[lbl == c])) * int((lbl == c).sum())
-            for c in np.unique(lbl)
+            float(np.var(v[lbl == c])) * int((lbl == c).sum()) for c in np.unique(lbl)
         )
         result[var] = 1.0 - within / (total_var * int(valid.sum()))
     return pd.Series(result, name="eta2")

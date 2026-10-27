@@ -137,9 +137,7 @@ def _run_lab_analysis(
     pca_model = PCA(n_components=2, random_state=42).fit(x_scaled)
     x_pca = pca_model.transform(x_scaled)  # noqa: N806
 
-    centroids_scaled = np.array(
-        [x_scaled[labels == c].mean(axis=0) for c in range(k)]
-    )
+    centroids_scaled = np.array([x_scaled[labels == c].mean(axis=0) for c in range(k)])
     try:
         centroids_original = scaler.inverse_transform(centroids_scaled)
     except Exception:
@@ -214,28 +212,32 @@ class Q3LabPage(BasePage):
     def _render_key_figures(self) -> None:
         results = st.session_state.get(_results_key("current"))
         if results is None:
-            kpi_row([
-                {"label": "Liaisons analysées", "value": "—"},
-                {"label": "k (profils)", "value": "—"},
-                {"label": "Silhouette", "value": "—"},
-                {"label": "Plus petit groupe", "value": "—"},
-            ])
+            kpi_row(
+                [
+                    {"label": "Liaisons analysées", "value": "—"},
+                    {"label": "k (profils)", "value": "—"},
+                    {"label": "Silhouette", "value": "—"},
+                    {"label": "Plus petit groupe", "value": "—"},
+                ]
+            )
             return
 
         labels = results["labels"]
         k = results["k"]
         sil = results["silhouette"]
         _, counts = np.unique(labels, return_counts=True)
-        kpi_row([
-            {"label": "Liaisons analysées", "value": fmt_number(len(labels))},
-            {"label": "k (profils)", "value": str(k)},
-            {
-                "label": "Silhouette",
-                "value": f"{sil:.3f}",
-                "help": "Entre −1 et 1 ; > 0,2 indique une structure non triviale.",
-            },
-            {"label": "Plus petit groupe", "value": str(int(counts.min()))},
-        ])
+        kpi_row(
+            [
+                {"label": "Liaisons analysées", "value": fmt_number(len(labels))},
+                {"label": "k (profils)", "value": str(k)},
+                {
+                    "label": "Silhouette",
+                    "value": f"{sil:.3f}",
+                    "help": "Entre −1 et 1 ; > 0,2 indique une structure non triviale.",
+                },
+                {"label": "Plus petit groupe", "value": str(int(counts.min()))},
+            ]
+        )
 
     def _render_controls(self) -> None:
         """Render parameter form and trigger analysis on submission."""
@@ -608,8 +610,7 @@ expliquée par l'appartenance au groupe.
                 "Tester la stabilité (bootstrap)",
                 key=self._state.widget_key("btn_bootstrap"),
                 help=(
-                    "Rééchantillonne 80 % des liaisons 30 fois "
-                    "et calcule l'ARI médian."
+                    "Rééchantillonne 80 % des liaisons 30 fois et calcule l'ARI médian."
                 ),
             ):
                 with st.spinner("…"):
@@ -655,9 +656,7 @@ expliquée par l'appartenance au groupe.
 
     def _render_ab_comparator(self) -> None:
         st.markdown("#### Comparateur A / B")
-        st.caption(
-            "Sauvegardez deux configurations pour les comparer côte à côte."
-        )
+        st.caption("Sauvegardez deux configurations pour les comparer côte à côte.")
         results = st.session_state.get(_results_key("current"))
 
         col_save_a, col_save_b = st.columns(2)

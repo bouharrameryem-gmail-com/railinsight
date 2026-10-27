@@ -17,6 +17,7 @@ class ConfigInvalide(ErreurRailInsight, ValueError):
 class DonneesInvalides(ErreurRailInsight, ValueError):
     """Fichier de données invalide : vide, illisible ou colonnes manquantes."""
 
+
 class RailInsightError(Exception):
     """Base exception for all RailInsight domain errors."""
 
@@ -39,4 +40,3 @@ class SchemaValidationError(RailInsightError):
 
 class InsufficientDataError(RailInsightError):
     """Raised when there are too few data points for a meaningful analysis."""
-

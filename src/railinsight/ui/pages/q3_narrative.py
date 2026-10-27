@@ -53,9 +53,7 @@ _CANONICAL_SCALER = "power"
 
 
 @st.cache_data(show_spinner="Calcul des profils de ponctualité…")
-def _run_canonical_q3(
-    monthly: pd.DataFrame, network: pd.DataFrame
-) -> dict:
+def _run_canonical_q3(monthly: pd.DataFrame, network: pd.DataFrame) -> dict:
     """Run the fixed Q3 analysis (parameters from notebook v3).
 
     Cached by DataFrame content — reruns only when the data changes.
@@ -78,8 +76,7 @@ def _run_canonical_q3(
     # Use adjusted columns when available, otherwise original
     display_cols = FEATURE_SETS[_CANONICAL_FEATURE_SET]
     input_cols = [
-        f"{c}_adj" if f"{c}_adj" in features.columns else c
-        for c in display_cols
+        f"{c}_adj" if f"{c}_adj" in features.columns else c for c in display_cols
     ]
 
     x_df = features[input_cols].dropna()  # noqa: N806
@@ -94,9 +91,7 @@ def _run_canonical_q3(
     pca_model = PCA(n_components=2, random_state=42).fit(x_scaled)
     x_pca = pca_model.transform(x_scaled)  # noqa: N806
 
-    centroids_scaled = np.array(
-        [x_scaled[labels == c].mean(axis=0) for c in range(k)]
-    )
+    centroids_scaled = np.array([x_scaled[labels == c].mean(axis=0) for c in range(k)])
     try:
         centroids_original = scaler.inverse_transform(centroids_scaled)
     except Exception:
@@ -107,9 +102,7 @@ def _run_canonical_q3(
         "late15_rate_adj" if "late15_rate_adj" in features.columns else "late15_rate"
     )
     if late15_col in features.columns:
-        cluster_means = (
-            features.assign(_lbl=labels).groupby("_lbl")[late15_col].mean()
-        )
+        cluster_means = features.assign(_lbl=labels).groupby("_lbl")[late15_col].mean()
         high_freq = int(cluster_means.idxmax())
     else:
         high_freq = 0
@@ -294,8 +287,8 @@ class Q3NarrativePage(BasePage):
             f'<strong style="color:{color};">{name}</strong><br>'
             f'<span style="font-size:0.85em;">'
             f"{n} liaisons · Retards > 15 min : "
-            f'{fmt_pct(late15) if not np.isnan(late15) else "—"}'
-            f' · Part sévère : {fmt_pct(severe) if not np.isnan(severe) else "—"}'
+            f"{fmt_pct(late15) if not np.isnan(late15) else '—'}"
+            f" · Part sévère : {fmt_pct(severe) if not np.isnan(severe) else '—'}"
             f"</span></div>",
             unsafe_allow_html=True,
         )
@@ -314,9 +307,18 @@ class Q3NarrativePage(BasePage):
 
         # Format values: rate columns as %, others as raw
         rate_cols = {
-            "cancellation_rate", "late15_rate", "late30_rate", "late60_rate",
-            "severe_share", "extreme_share", "late_arrival_rate", "severe_ratio",
-            "volatility_cv", "chronicity", "irregularity", "volatility",
+            "cancellation_rate",
+            "late15_rate",
+            "late30_rate",
+            "late60_rate",
+            "severe_share",
+            "extreme_share",
+            "late_arrival_rate",
+            "severe_ratio",
+            "volatility_cv",
+            "chronicity",
+            "irregularity",
+            "volatility",
         }
         text = []
         for row in centroids:
@@ -386,8 +388,11 @@ class Q3NarrativePage(BasePage):
             if isinstance(val, float) and not np.isnan(val):
                 col_base = col.replace("_adj", "")
                 if col_base in {
-                    "cancellation_rate", "late15_rate", "severe_share",
-                    "extreme_share", "late_arrival_rate",
+                    "cancellation_rate",
+                    "late15_rate",
+                    "severe_share",
+                    "extreme_share",
+                    "late_arrival_rate",
                 }:
                     indicators[col.replace("_", " ")] = fmt_pct(val)
                 else:
