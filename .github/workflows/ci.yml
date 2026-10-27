@@ -48,8 +48,11 @@ jobs:
 #      - name: Docstring presence (modules, classes, functions)
 #        run: uv run interrogate -c pyproject.toml src
 
-#      - name: Unit tests and coverage (>= 90%)
-#        run: uv run pytest --cov=src/railinsight --cov-report=term-missing --cov-report=xml --cov-fail-under=90
+      - name: Unit tests
+        run: uv run pytest --tb=short -q
+
+      - name: Coverage gate (>= 90%)
+        run: uv run pytest --cov=src/railinsight --cov-report=term-missing --cov-report=xml --cov-fail-under=90
 
       - name: Dependency vulnerability audit
         run: |
