@@ -12,36 +12,42 @@ import streamlit as st
 from railinsight.interfaces.data_protocols import DataProvider
 from railinsight.ui.components.kpi_card import kpi_row
 from railinsight.ui.providers import get_provider
+from railinsight.ui.theme.css import inject_global_css
 from railinsight.ui.theme.tokens import QUESTION_COLORS
 from railinsight.utils.formatting import fmt_pct
 
 logger = logging.getLogger(__name__)
 
 # Questions catalogue — all values hardcoded, no user input injected here.
+# page_path: relative path as declared in app.py st.Page(), or None if not yet built.
 _QUESTIONS = [
     (
         1,
         "Liaisons les moins fiables",
         "Quelles liaisons sont chroniquement en retard, et ça s'aggrave-t-il ?",
         "Michelle",
+        None,
     ),
     (
         2,
         "Gares responsables vs victimes",
         "Quelles gares concentrent les retards ? Qui subit les cascades ?",
         "Éric",
+        None,
     ),
     (
         3,
         "Profils de ponctualité",
         "Peut-on regrouper les liaisons par profil de régularité via clustering ?",
         "Bachelard",
+        "src/railinsight/ui/pages/q3_narrative.py",
     ),
     (
         4,
         "Score de fiabilité",
         "Score par liaison (annulations + retards) représenté sur la carte réseau.",
         "Meryem",
+        None,
     ),
 ]
 
@@ -52,6 +58,7 @@ def render(provider: DataProvider) -> None:
     Args:
         provider: Data provider used to load network KPIs.
     """
+    inject_global_css()
     _render_hero()
     _render_network_kpis(provider)
     st.markdown("<br>", unsafe_allow_html=True)
@@ -122,7 +129,7 @@ def _render_network_kpis(provider: DataProvider) -> None:
 
 
 def _render_question_cards() -> None:
-    """Render the four question navigation cards."""
+    """Render the four question navigation cards with optional page links."""
     st.markdown(
         '<p style="font-size:0.72rem;font-weight:700;color:#9BA3AE;'
         'text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">'
@@ -133,19 +140,37 @@ def _render_question_cards() -> None:
     left_col, right_col = st.columns(2, gap="medium")
     columns = [left_col, right_col]
 
-    for i, (num, title, description, author) in enumerate(_QUESTIONS):
+    for i, (num, title, description, author, page_path) in enumerate(_QUESTIONS):
         color = QUESTION_COLORS[num]
         with columns[i % 2]:
             st.markdown(
-                f'<div class="ri-question-card" style="border-top:4px solid {color};">'
-                f'<div class="ri-question-number" style="color:{color};">'
-                f"Q{num}</div>"
-                f'<div class="ri-question-title">{title}</div>'
-                f'<div class="ri-question-desc">{description}</div>'
-                f'<div class="ri-question-author">Auteur·e : {author}</div>'
+                f'<div style="'
+                f"background:white;"
+                f"border-radius:12px;"
+                f"padding:20px;"
+                f"box-shadow:0 2px 8px rgba(0,0,0,0.07);"
+                f"margin-bottom:4px;"
+                f'border-top:4px solid {color};">'
+                f'<div style="font-size:0.68rem;font-weight:700;'
+                f"color:{color};text-transform:uppercase;"
+                f'letter-spacing:0.1em;margin-bottom:6px;">Q{num}</div>'
+                f'<div style="font-size:1rem;font-weight:700;'
+                f'color:#1A1A2E;margin-bottom:6px;">{title}</div>'
+                f'<div style="font-size:0.85rem;color:#4A5568;'
+                f'line-height:1.55;margin-bottom:10px;">{description}</div>'
+                f'<div style="font-size:0.72rem;color:#9BA3AE;'
+                f'font-weight:500;">Auteur·e : {author}</div>'
                 f"</div>",
                 unsafe_allow_html=True,
             )
+            if page_path:
+                st.page_link(
+                    page_path,
+                    label="Voir l'analyse →",
+                    icon=":material/arrow_forward:",
+                )
+            else:
+                st.caption("En cours de développement")
 
 
 def _render_about(provider: DataProvider) -> None:
