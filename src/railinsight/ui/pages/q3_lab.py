@@ -15,6 +15,7 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.figure_factory as ff
 import plotly.graph_objects as go
 import streamlit as st
 from sklearn.decomposition import PCA
@@ -30,6 +31,7 @@ from railinsight.analysis.q3_clustering import (
     compute_ari_bootstrap,
     compute_ari_seeds,
     compute_eta2,
+    compute_ward_linkage,
     detect_redundancy,
     fit_clustering,
     permutation_test,
@@ -395,6 +397,15 @@ class Q3LabPage(BasePage):
         st.divider()
         self._render_centroid_heatmap(results)
         st.divider()
+        self._render_distributions_section(results)
+        st.divider()
+        self._render_cluster_routes(results)
+        st.divider()
+        self._render_correlation_section(results)
+        st.divider()
+        if results["algorithm"] == "ward":
+            self._render_dendrogram_section(results)
+            st.divider()
         self._render_eta2_section(results)
         st.divider()
         self._render_robustness_section(results)
@@ -544,6 +555,187 @@ expliquée par l'appartenance au groupe.
             how_to_read=(
                 "Valeurs dans l'espace mis à l'échelle. "
                 "Rouge = valeur élevée relative, vert = valeur faible."
+            ),
+        )
+
+    def _render_distributions_section(self, results: dict) -> None:
+        """Violin + box plots for each feature, coloured by cluster."""
+        st.markdown("#### Distributions par profil")
+        features = results["features"]
+        labels = results["labels"]
+        routes = results["routes"]
+        input_cols = results["input_cols"]
+        k = results["k"]
+
+        # Build long-form dataframe: one row per (route, feature)
+        valid_cols = [c for c in input_cols if c in features.columns]
+        plot_df = features.loc[routes, valid_cols].copy()
+        plot_df["_cluster"] = [f"Profil {int(lbl) + 1}" for lbl in labels]
+
+        chart_type = st.radio(
+            "Type de graphique",
+            options=["violin", "box"],
+            format_func=lambda x: "Violin" if x == "violin" else "Boîte à moustaches",
+            horizontal=True,
+            key=self._state.widget_key("dist_chart_type"),
+        )
+        selected_col = st.selectbox(
+            "Indicateur",
+            options=[c for c in input_cols if c in features.columns],
+            format_func=lambda c: c.replace("_adj", "").replace("_", " "),
+            key=self._state.widget_key("dist_col"),
+        )
+
+        if chart_type == "violin":
+            fig = px.violin(
+                plot_df,
+                y=selected_col,
+                x="_cluster",
+                color="_cluster",
+                box=True,
+                points="outliers",
+                labels={
+                    selected_col: selected_col.replace("_adj", "").replace("_", " "),
+                    "_cluster": "Profil",
+                },
+                color_discrete_sequence=CLUSTER_COLORS[:k],
+            )
+        else:
+            fig = px.box(
+                plot_df,
+                y=selected_col,
+                x="_cluster",
+                color="_cluster",
+                points="outliers",
+                labels={
+                    selected_col: selected_col.replace("_adj", "").replace("_", " "),
+                    "_cluster": "Profil",
+                },
+                color_discrete_sequence=CLUSTER_COLORS[:k],
+            )
+        fig.update_layout(showlegend=False)
+        col_clean = selected_col.replace("_adj", "").replace("_", " ")
+        chart_container(
+            fig,
+            title=f"Distribution de « {col_clean} » par profil",
+            how_to_read=(
+                "Chaque boîte montre la médiane, les quartiles et les valeurs extrêmes "
+                "pour un profil. Les points isolés sont des liaisons atypiques."
+            ),
+        )
+
+    def _render_cluster_routes(self, results: dict) -> None:
+        """Expandable list of routes per cluster."""
+        st.markdown("#### Liaisons par profil")
+        features = results["features"]
+        labels = results["labels"]
+        routes = results["routes"]
+        k = results["k"]
+        display_cols = results["base_cols"]
+
+        available = [c for c in display_cols if c in features.columns]
+        for c in range(k):
+            mask = [int(lbl) == c for lbl in labels]
+            cluster_routes = [r for r, m in zip(routes, mask, strict=False) if m]
+            with st.expander(
+                f"Profil {c + 1} — {len(cluster_routes)} liaisons",
+                expanded=(c == 0),
+            ):
+                if available:
+                    df_show = features.loc[cluster_routes, available].copy()
+                    df_show.index.name = "Liaison"
+                    df_show.columns = [col.replace("_", " ") for col in df_show.columns]
+                    df_show = df_show.round(4)
+                    st.dataframe(df_show, use_container_width=True)
+                else:
+                    st.write(cluster_routes)
+
+    def _render_correlation_section(self, results: dict) -> None:
+        """Heatmap of Pearson correlations between features."""
+        st.markdown("#### Corrélations entre indicateurs")
+        features = results["features"]
+        input_cols = results["input_cols"]
+        available = [c for c in input_cols if c in features.columns]
+
+        if len(available) < 2:  # noqa: PLR2004
+            st.info("Pas assez d'indicateurs disponibles pour une heatmap.")
+            return
+
+        corr = features[available].corr(method="pearson")
+        labels_clean = [c.replace("_adj", "").replace("_", " ") for c in available]
+
+        fig = px.imshow(
+            corr.values,
+            x=labels_clean,
+            y=labels_clean,
+            color_continuous_scale="RdBu_r",
+            zmin=-1,
+            zmax=1,
+            text_auto=".2f",
+            aspect="auto",
+        )
+        fig.update_layout(
+            xaxis={"tickangle": -30},
+            coloraxis_colorbar={"title": "ρ"},
+        )
+        chart_container(
+            fig,
+            title="Heatmap de corrélation (Pearson)",
+            how_to_read=(
+                "Rouge foncé = corrélation positive forte, "
+                "bleu foncé = corrélation négative forte. "
+                "Des indicateurs très corrélés (|ρ| > 0,8) surpondèrent "
+                "une dimension dans le clustering."
+            ),
+        )
+
+    def _render_dendrogram_section(self, results: dict) -> None:
+        """Ward dendrogram — visible only when algorithm == 'ward'."""
+        st.markdown("#### Dendrogramme Ward")
+        x_scaled = results["X_scaled"]
+        routes = results["routes"]
+
+        with st.spinner("Calcul du dendrogramme…"):
+            try:
+                linkage_matrix = compute_ward_linkage(x_scaled)
+            except Exception:
+                logger.exception("Ward linkage failed")
+                st.warning("Impossible de calculer le dendrogramme.")
+                return
+
+        # plotly figure_factory creates the dendrogram directly from data
+        # labels are route names; limit display to 60 routes for readability
+        max_labels = 60
+        if len(routes) > max_labels:
+            st.caption(
+                f"Trop de liaisons ({len(routes)}) pour tout afficher. "
+                f"Les {max_labels} premières sont montrées."
+            )
+            display_data = x_scaled[:max_labels]
+            display_labels = [str(r) for r in routes[:max_labels]]
+        else:
+            display_data = x_scaled
+            display_labels = [str(r) for r in routes]
+
+        fig = ff.create_dendrogram(
+            display_data,
+            labels=display_labels,
+            linkagefun=lambda x: compute_ward_linkage(x),
+            color_threshold=0.7 * float(linkage_matrix[:, 2].max()),
+        )
+        fig.update_layout(
+            height=500,
+            xaxis={"tickangle": -60, "tickfont": {"size": 8}},
+            yaxis={"title": "Distance Ward"},
+        )
+        chart_container(
+            fig,
+            title="Dendrogramme (liaison Ward)",
+            how_to_read=(
+                "Chaque feuille est une liaison. "
+                "Plus deux liaisons fusionnent bas dans l'arbre, "
+                "plus elles sont proches. "
+                "Le seuil en pointillés suggère le nombre naturel de groupes."
             ),
         )
 
