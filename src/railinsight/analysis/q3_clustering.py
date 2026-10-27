@@ -18,6 +18,7 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
+from scipy.cluster.hierarchy import linkage
 from scipy.optimize import linear_sum_assignment
 from scipy.stats import spearmanr
 from sklearn.cluster import AgglomerativeClustering, KMeans
@@ -606,3 +607,20 @@ def compare_configurations(
         "n_changed": int(changed_mask.sum()),
         "changed_routes": changed_routes,
     }
+
+
+def compute_ward_linkage(x_scaled: np.ndarray) -> np.ndarray:
+    """Compute Ward hierarchical linkage matrix for the scaled feature matrix.
+
+    Args:
+        x_scaled: (n_routes, n_features) array already scaled.
+
+    Returns:
+        Linkage matrix (n-1, 4) as returned by scipy.cluster.hierarchy.linkage.
+        Each row: [child_a, child_b, distance, cluster_size].
+    """
+    if len(x_scaled) < 2:  # noqa: PLR2004
+        raise InsufficientDataError(
+            "Ward linkage requiert au moins 2 observations."
+        )
+    return linkage(x_scaled, method="ward")
