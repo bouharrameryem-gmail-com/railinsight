@@ -26,6 +26,7 @@ from railinsight.analysis.q3_clustering import (
     fit_clustering,
     scale_features,
 )
+from railinsight.config import charger_config
 from railinsight.exceptions import InsufficientDataError, RailInsightError
 from railinsight.interfaces.data_protocols import DataProvider
 from railinsight.ui.base_page import BasePage
@@ -46,21 +47,27 @@ logger = logging.getLogger(__name__)
 # Module-level cache: analysis runs once per server process per data snapshot
 # ---------------------------------------------------------------------------
 
-_CANONICAL_FEATURE_SET = "v3"
-_CANONICAL_EXCLUSION = "known"
-_CANONICAL_MIN_MONTHS = 24
-_CANONICAL_SCALER = "power"
-
 
 @st.cache_data(show_spinner="Calcul des profils de ponctualité…")
-def _run_canonical_q3(monthly: pd.DataFrame, network: pd.DataFrame) -> dict:
-    """Run the fixed Q3 analysis (parameters from notebook v3).
+def _run_canonical_q3(
+    monthly: pd.DataFrame,
+    network: pd.DataFrame,
+    feature_set: str,
+    exclusion: str,
+    min_months: int,
+    scaler_type: str,
+) -> dict:
+    """Run the fixed Q3 analysis with parameters from config/defaut.yaml.
 
-    Cached by DataFrame content — reruns only when the data changes.
+    Cached by (data, config) — reruns only when data or config changes.
 
     Args:
         monthly: Clean monthly DataFrame.
         network: Monthly network DataFrame.
+        feature_set: Feature set key (v3/fixed/composite).
+        exclusion: Month exclusion strategy (none/known/data).
+        min_months: Minimum valid months per route.
+        scaler_type: Scaling method (power/standard).
 
     Returns:
         Dict with analysis results: features, labels, PCA, centroids, etc.
@@ -68,13 +75,13 @@ def _run_canonical_q3(monthly: pd.DataFrame, network: pd.DataFrame) -> dict:
     features = build_q3_features(
         monthly,
         network,
-        exclusion=_CANONICAL_EXCLUSION,
-        min_months=_CANONICAL_MIN_MONTHS,
+        exclusion=exclusion,
+        min_months=min_months,
     )
-    features, _ = adjust_for_duration(features, FEATURE_SETS[_CANONICAL_FEATURE_SET])
+    features, _ = adjust_for_duration(features, FEATURE_SETS[feature_set])
 
     # Use adjusted columns when available, otherwise original
-    display_cols = FEATURE_SETS[_CANONICAL_FEATURE_SET]
+    display_cols = FEATURE_SETS[feature_set]
     input_cols = [
         f"{c}_adj" if f"{c}_adj" in features.columns else c for c in display_cols
     ]
@@ -83,7 +90,7 @@ def _run_canonical_q3(monthly: pd.DataFrame, network: pd.DataFrame) -> dict:
     if len(x_df) < 4:  # noqa: PLR2004
         raise InsufficientDataError("Pas assez de liaisons pour le clustering.")
 
-    x_scaled, scaler = scale_features(x_df, _CANONICAL_SCALER)  # noqa: N806
+    x_scaled, scaler = scale_features(x_df, scaler_type)  # noqa: N806
     k = auto_select_k(x_scaled, "kmeans")
     labels = fit_clustering(x_scaled, "kmeans", k)
     sil = float(silhouette_score(x_scaled, labels))
@@ -163,10 +170,18 @@ class Q3NarrativePage(BasePage):
 
     # --- Template method sections ---
 
+    def _cfg(self):
+        return charger_config().q3
+
     def _render_key_figures(self) -> None:
+        cfg = self._cfg()
         results = _run_canonical_q3(
             self._provider.load_clean_monthly(),
             self._provider.load_network_monthly(),
+            cfg.feature_set,
+            cfg.exclusion,
+            cfg.min_months,
+            cfg.scaler,
         )
         labels = results["labels"]
         sil = results["silhouette"]
@@ -212,9 +227,14 @@ class Q3NarrativePage(BasePage):
             )
 
     def _render_body(self) -> None:
+        cfg = self._cfg()
         results = _run_canonical_q3(
             self._provider.load_clean_monthly(),
             self._provider.load_network_monthly(),
+            cfg.feature_set,
+            cfg.exclusion,
+            cfg.min_months,
+            cfg.scaler,
         )
         labels = results["labels"]
         cluster_names = results["cluster_names"]

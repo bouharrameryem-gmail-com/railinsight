@@ -107,6 +107,38 @@ class ScoreFiabilite:
         verifier_entier("score_fiabilite.top_n", self.top_n, minimum=1)
 
 
+@dataclass(frozen=True)
+class Q3Config:
+    """Canonical parameters for the Q3 punctuality profiling analysis."""
+
+    feature_set: str
+    exclusion: str
+    min_months: int
+    scaler: str
+
+    def __post_init__(self) -> None:
+        """Validate Q3 analysis parameters."""
+        valid_feature_sets = {"v3", "fixed", "composite"}
+        if self.feature_set not in valid_feature_sets:
+            raise ConfigInvalide(
+                f"'q3.feature_set' doit être l'un de {valid_feature_sets}, "
+                f"reçu : {self.feature_set!r}"
+            )
+        valid_exclusions = {"none", "known", "data"}
+        if self.exclusion not in valid_exclusions:
+            raise ConfigInvalide(
+                f"'q3.exclusion' doit être l'un de {valid_exclusions}, "
+                f"reçu : {self.exclusion!r}"
+            )
+        verifier_entier("q3.min_months", self.min_months, minimum=1)
+        valid_scalers = {"power", "standard"}
+        if self.scaler not in valid_scalers:
+            raise ConfigInvalide(
+                f"'q3.scaler' doit être l'un de {valid_scalers}, "
+                f"reçu : {self.scaler!r}"
+            )
+
+
 # >>> Pour ajouter votre analyse : une dataclass ici <<<
 
 
@@ -117,6 +149,7 @@ class Config:
     graine: int
     chemins: Chemins
     score_fiabilite: ScoreFiabilite
+    q3: Q3Config
     # >>> et un champ ici, avec le même nom que la section du YAML <<<
 
 
