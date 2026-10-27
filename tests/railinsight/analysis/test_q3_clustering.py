@@ -137,21 +137,21 @@ class TestDetectRedundancy:
 
 class TestScaleFeatures:
     def test_power_scaler(self, features):
-        X_df = features[FEATURE_SETS["v3"]].dropna()
-        X_scaled, scaler = scale_features(X_df, "power")
-        assert X_scaled.shape == (len(X_df), len(FEATURE_SETS["v3"]))
-        assert abs(X_scaled.mean()) < 0.5  # roughly centered
+        x_df = features[FEATURE_SETS["v3"]].dropna()
+        x_scaled, scaler = scale_features(x_df, "power")
+        assert x_scaled.shape == (len(x_df), len(FEATURE_SETS["v3"]))
+        assert abs(x_scaled.mean()) < 0.5  # roughly centered
 
     def test_standard_scaler(self, features):
-        X_df = features[FEATURE_SETS["v3"]].dropna()
-        X_scaled, _ = scale_features(X_df, "standard")
-        assert X_scaled.shape[1] == len(FEATURE_SETS["v3"])
+        x_df = features[FEATURE_SETS["v3"]].dropna()
+        x_scaled, _ = scale_features(x_df, "standard")
+        assert x_scaled.shape[1] == len(FEATURE_SETS["v3"])
 
     def test_inverse_transform(self, features):
-        X_df = features[FEATURE_SETS["v3"]].dropna()
-        X_scaled, scaler = scale_features(X_df, "power")
-        reconstructed = scaler.inverse_transform(X_scaled)
-        assert reconstructed.shape == X_scaled.shape
+        x_df = features[FEATURE_SETS["v3"]].dropna()
+        x_scaled, scaler = scale_features(x_df, "power")
+        reconstructed = scaler.inverse_transform(x_scaled)
+        assert reconstructed.shape == x_scaled.shape
 
 
 # ---------------------------------------------------------------------------
@@ -160,33 +160,33 @@ class TestScaleFeatures:
 
 
 @pytest.fixture(scope="module")
-def X_scaled(features):
-    X_df = features[FEATURE_SETS["v3"]].dropna()
-    X, _ = scale_features(X_df)
-    return X
+def x_scaled(features):
+    x_df = features[FEATURE_SETS["v3"]].dropna()
+    x, _ = scale_features(x_df)
+    return x
 
 
 class TestFitClustering:
-    def test_kmeans_returns_labels(self, X_scaled):
-        labels = fit_clustering(X_scaled, "kmeans", k=2)
-        assert len(labels) == X_scaled.shape[0]
+    def test_kmeans_returns_labels(self, x_scaled):
+        labels = fit_clustering(x_scaled, "kmeans", k=2)
+        assert len(labels) == x_scaled.shape[0]
         assert set(labels).issubset({0, 1})
 
-    def test_ward_returns_labels(self, X_scaled):
-        labels = fit_clustering(X_scaled, "ward", k=3)
+    def test_ward_returns_labels(self, x_scaled):
+        labels = fit_clustering(x_scaled, "ward", k=3)
         assert len(set(labels)) == 3
 
-    def test_gmm_returns_labels(self, X_scaled):
-        labels = fit_clustering(X_scaled, "gmm", k=2)
-        assert len(labels) == X_scaled.shape[0]
+    def test_gmm_returns_labels(self, x_scaled):
+        labels = fit_clustering(x_scaled, "gmm", k=2)
+        assert len(labels) == x_scaled.shape[0]
 
-    def test_invalid_algorithm_raises(self, X_scaled):
+    def test_invalid_algorithm_raises(self, x_scaled):
         with pytest.raises(ValueError, match="Unknown algorithm"):
-            fit_clustering(X_scaled, "invalid", k=2)  # type: ignore[arg-type]
+            fit_clustering(x_scaled, "invalid", k=2)  # type: ignore[arg-type]
 
-    def test_reproducible_with_same_seed(self, X_scaled):
-        a = fit_clustering(X_scaled, "kmeans", k=2, random_state=0)
-        b = fit_clustering(X_scaled, "kmeans", k=2, random_state=0)
+    def test_reproducible_with_same_seed(self, x_scaled):
+        a = fit_clustering(x_scaled, "kmeans", k=2, random_state=0)
+        b = fit_clustering(x_scaled, "kmeans", k=2, random_state=0)
         np.testing.assert_array_equal(a, b)
 
 
@@ -196,13 +196,13 @@ class TestFitClustering:
 
 
 class TestAutoSelectK:
-    def test_returns_int_in_range(self, X_scaled):
-        k = auto_select_k(X_scaled, "kmeans", k_range=range(2, 5))
+    def test_returns_int_in_range(self, x_scaled):
+        k = auto_select_k(x_scaled, "kmeans", k_range=range(2, 5))
         assert 2 <= k <= 4
 
-    def test_min_cluster_size_respected(self, X_scaled):
-        k = auto_select_k(X_scaled, "kmeans", k_range=range(2, 5), min_cluster_size=2)
-        labels = fit_clustering(X_scaled, "kmeans", k=k)
+    def test_min_cluster_size_respected(self, x_scaled):
+        k = auto_select_k(x_scaled, "kmeans", k_range=range(2, 5), min_cluster_size=2)
+        labels = fit_clustering(x_scaled, "kmeans", k=k)
         assert np.bincount(labels).min() >= 2
 
 
@@ -212,8 +212,8 @@ class TestAutoSelectK:
 
 
 class TestSilhouetteCurve:
-    def test_shape(self, X_scaled):
-        curve = silhouette_curve(X_scaled, "kmeans", k_range=range(2, 5))
+    def test_shape(self, x_scaled):
+        curve = silhouette_curve(x_scaled, "kmeans", k_range=range(2, 5))
         assert len(curve) == 3
         assert "silhouette" in curve.columns
         assert "davies_bouldin" in curve.columns
@@ -226,10 +226,10 @@ class TestSilhouetteCurve:
 
 
 class TestComputeEta2:
-    def test_values_in_range(self, features, X_scaled):
-        labels = fit_clustering(X_scaled, "kmeans", k=2)
-        X_df = features[FEATURE_SETS["v3"]].dropna()
-        aligned = features.loc[X_df.index]
+    def test_values_in_range(self, features, x_scaled):
+        labels = fit_clustering(x_scaled, "kmeans", k=2)
+        x_df = features[FEATURE_SETS["v3"]].dropna()
+        aligned = features.loc[x_df.index]
         eta2 = compute_eta2(aligned, labels, FEATURE_SETS["v3"])
         valid = eta2.dropna()
         assert (valid >= 0).all()
@@ -242,8 +242,8 @@ class TestComputeEta2:
 
 
 class TestCompareConfigurations:
-    def test_same_config_ari_is_one(self, X_scaled):
-        labels = fit_clustering(X_scaled, "kmeans", k=2)
+    def test_same_config_ari_is_one(self, x_scaled):
+        labels = fit_clustering(x_scaled, "kmeans", k=2)
         routes = pd.Index([f"r{i}" for i in range(len(labels))])
         result = compare_configurations(routes, labels, routes, labels)
         assert abs(result["ari"] - 1.0) < 1e-6
@@ -252,7 +252,9 @@ class TestCompareConfigurations:
     def test_no_common_routes(self):
         routes_a = pd.Index(["A", "B"])
         routes_b = pd.Index(["C", "D"])
-        result = compare_configurations(routes_a, np.array([0, 1]), routes_b, np.array([0, 1]))
+        result = compare_configurations(
+            routes_a, np.array([0, 1]), routes_b, np.array([0, 1])
+        )
         assert result["n_common"] == 0
         assert np.isnan(result["ari"])
 
@@ -263,12 +265,12 @@ class TestCompareConfigurations:
 
 
 class TestPermutationTest:
-    def test_returns_expected_keys(self, X_scaled):
-        result = permutation_test(X_scaled, "kmeans", k=2, n_permutations=3)
+    def test_returns_expected_keys(self, x_scaled):
+        result = permutation_test(x_scaled, "kmeans", k=2, n_permutations=3)
         assert "observed_silhouette" in result
         assert "max_null_silhouette" in result
         assert "p_value" in result
 
-    def test_p_value_in_range(self, X_scaled):
-        result = permutation_test(X_scaled, "kmeans", k=2, n_permutations=3)
+    def test_p_value_in_range(self, x_scaled):
+        result = permutation_test(x_scaled, "kmeans", k=2, n_permutations=3)
         assert 0.0 <= result["p_value"] <= 1.0
