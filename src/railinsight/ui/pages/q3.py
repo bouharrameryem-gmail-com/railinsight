@@ -191,9 +191,7 @@ def _run_analysis(
     pca_model = PCA(n_components=2, random_state=42).fit(x_scaled)
     x_pca = pca_model.transform(x_scaled)
 
-    centroids_scaled = np.array(
-        [x_scaled[labels == c].mean(axis=0) for c in range(k)]
-    )
+    centroids_scaled = np.array([x_scaled[labels == c].mean(axis=0) for c in range(k)])
     try:
         centroids_original = scaler.inverse_transform(centroids_scaled)
     except Exception:
@@ -201,14 +199,10 @@ def _run_analysis(
 
     # Assign descriptive names when k == 2
     late15_col = (
-        "late15_rate_adj"
-        if "late15_rate_adj" in features.columns
-        else "late15_rate"
+        "late15_rate_adj" if "late15_rate_adj" in features.columns else "late15_rate"
     )
     if late15_col in features.columns:
-        cluster_means = (
-            features.assign(_lbl=labels).groupby("_lbl")[late15_col].mean()
-        )
+        cluster_means = features.assign(_lbl=labels).groupby("_lbl")[late15_col].mean()
         high_delay = int(cluster_means.idxmax())
     else:
         high_delay = 0
@@ -313,9 +307,7 @@ class Q3Page(BasePage):
             {
                 "label": "Silhouette",
                 "value": f"{sil:.3f}",
-                "help": (
-                    "Entre −1 et 1 ; > 0,2 indique une structure non triviale."
-                ),
+                "help": ("Entre −1 et 1 ; > 0,2 indique une structure non triviale."),
             },
             {"label": "Plus petit profil", "value": str(int(counts.min()))},
         ]
@@ -338,6 +330,8 @@ class Q3Page(BasePage):
         monthly = self._provider.load_clean_monthly()
         network = self._provider.load_network_monthly()
 
+        years = sorted(monthly["date"].dt.year.dropna().unique().astype(int).tolist())
+
         with st.form(key="q3_params"):
             st.markdown("##### Données")
             col1, col2 = st.columns(2)
@@ -346,6 +340,20 @@ class Q3Page(BasePage):
                 min_months = min_months_filter(key_prefix=self._state.page_key)
             with col2:
                 adjust = duration_adjust_toggle(key_prefix=self._state.page_key)
+
+            if len(years) >= 2:
+                period = st.select_slider(
+                    "Période analysée",
+                    options=years,
+                    value=(years[0], years[-1]),
+                    key=self._state.widget_key("period"),
+                    help=(
+                        "Restreindre la période modifie quelles liaisons ont "
+                        "assez de mois valides et peut changer les profils."
+                    ),
+                )
+            else:
+                period = (years[0], years[-1]) if years else (2018, 2025)
 
             st.markdown("##### Indicateurs à inclure dans le clustering")
             fs_choice = st.radio(
@@ -375,10 +383,7 @@ class Q3Page(BasePage):
                 # Show which columns are included in the selected preset
                 preset_cols = FEATURE_SETS.get(fs_choice, [])
                 if preset_cols:
-                    st.caption(
-                        "Colonnes : "
-                        + ", ".join(f"`{c}`" for c in preset_cols)
-                    )
+                    st.caption("Colonnes : " + ", ".join(f"`{c}`" for c in preset_cols))
 
             st.markdown("##### Prétraitement")
             scaler_choice = st.radio(
@@ -402,9 +407,7 @@ class Q3Page(BasePage):
             k_mode = st.radio(
                 "Nombre de profils k",
                 options=["auto", "manuel"],
-                format_func=lambda x: (
-                    "Auto (silhouette)" if x == "auto" else "Manuel"
-                ),
+                format_func=lambda x: "Auto (silhouette)" if x == "auto" else "Manuel",
                 index=0,
                 key=self._state.widget_key("k_mode"),
                 horizontal=True,
@@ -455,8 +458,12 @@ class Q3Page(BasePage):
         if submitted:
             with st.spinner("Calcul en cours…"):
                 try:
+                    start_y, end_y = int(period[0]), int(period[1])
+                    monthly_filtered = monthly[
+                        monthly["date"].dt.year.between(start_y, end_y)
+                    ]
                     results = _run_analysis(
-                        monthly=monthly,
+                        monthly=monthly_filtered,
                         network=network,
                         feature_set=fs_choice,
                         custom_cols=custom_cols,
@@ -590,8 +597,7 @@ test de permutation (significativité).
         st.divider()
 
         label_names = {
-            int(c): cluster_names.get(int(c), f"Profil {c + 1}")
-            for c in range(k)
+            int(c): cluster_names.get(int(c), f"Profil {c + 1}") for c in range(k)
         }
         pca_panel(
             pca=results["pca"],
@@ -736,6 +742,8 @@ test de permutation (significativité).
     # -------------------------------------------------------------------------
 
     def _render_exploration_tab(self, results: dict) -> None:
+        self._render_silhouette_section(results)
+        st.divider()
         self._render_distributions_section(results)
         st.divider()
         self._render_cluster_routes(results)
@@ -776,7 +784,9 @@ test de permutation (significativité).
         col_label = selected_col.replace("_adj", "").replace("_", " ")
 
         color_map = {
-            cluster_names.get(c, f"Profil {c + 1}"): CLUSTER_COLORS[c % len(CLUSTER_COLORS)]  # noqa: E501
+            cluster_names.get(c, f"Profil {c + 1}"): CLUSTER_COLORS[
+                c % len(CLUSTER_COLORS)
+            ]  # noqa: E501
             for c in range(k)
         }
 
@@ -931,9 +941,7 @@ test de permutation (significativité).
         k = results["k"]
         cluster_names = results["cluster_names"]
 
-        label_names = {
-            c: cluster_names.get(c, f"Profil {c + 1}") for c in range(k)
-        }
+        label_names = {c: cluster_names.get(c, f"Profil {c + 1}") for c in range(k)}
         route_map(
             routes=routes,
             labels=list(labels),
@@ -947,8 +955,6 @@ test de permutation (significativité).
     # -------------------------------------------------------------------------
 
     def _render_robustesse_tab(self, results: dict) -> None:
-        self._render_silhouette_section(results)
-        st.divider()
         self._render_eta2_section(results)
         st.divider()
         self._render_robustness_section(results)
