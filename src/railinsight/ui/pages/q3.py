@@ -485,6 +485,9 @@ class Q3Page(BasePage):
                         results["k"],
                         results["silhouette"],
                     )
+                    # Rerun so _render_key_figures (called before _render_controls
+                    # in BasePage.render) sees the freshly stored results.
+                    st.rerun()
                 except RailInsightError as exc:
                     st.warning(f"⚠️ {exc}")
                 except Exception:
@@ -968,9 +971,34 @@ test de permutation (significativité).
                 k_range=range(2, 9),
             )
 
-        tab_sil, tab_db, tab_size = st.tabs(
-            ["Silhouette", "Davies-Bouldin", "Taille min. du groupe"]
+        tab_inertia, tab_sil, tab_db, tab_size = st.tabs(
+            ["Inertie (coude)", "Silhouette", "Davies-Bouldin", "Taille min. du groupe"]
         )
+        with tab_inertia:
+            fig = px.line(
+                curve,
+                x="k",
+                y="inertia",
+                markers=True,
+                labels={"inertia": "Inertie (WCSS)", "k": "Nombre de profils k"},
+            )
+            fig.add_vline(
+                x=results["k"],
+                line_dash="dash",
+                line_color=CLUSTER_COLORS[0],
+                annotation_text=f"k choisi = {results['k']}",
+            )
+            chart_container(
+                fig,
+                title="Inertie selon k — méthode du coude",
+                how_to_read=(
+                    "L'inertie mesure la compacité des groupes "
+                    "(somme des distances au centre). "
+                    "Elle décroît toujours avec k ; cherchez le 'coude' : "
+                    "le point où le gain devient marginal. "
+                    "Le k optimal est souvent juste après ce coude."
+                ),
+            )
         with tab_sil:
             fig = px.line(
                 curve,

@@ -392,12 +392,21 @@ def silhouette_curve(
     records = []
     for k in k_range:
         labels = fit_clustering(x_scaled, algorithm, k, random_state=random_state)
+        # Inertia = sum of squared distances to the nearest cluster center.
+        # Meaningful for all algorithms; the elbow is clearest for K-means.
+        inertia = 0.0
+        for c in range(k):
+            mask = labels == c
+            if mask.any():
+                center = x_scaled[mask].mean(axis=0)
+                inertia += float(np.sum((x_scaled[mask] - center) ** 2))
         records.append(
             {
                 "k": k,
                 "silhouette": float(silhouette_score(x_scaled, labels)),
                 "davies_bouldin": float(davies_bouldin_score(x_scaled, labels)),
                 "min_cluster_size": int(np.bincount(labels).min()),
+                "inertia": inertia,
             }
         )
     return pd.DataFrame(records)
