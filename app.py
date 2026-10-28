@@ -61,14 +61,9 @@ pages = [
     # ),
     # Q3 — Bachelard
     st.Page(
-        "src/railinsight/ui/pages/q3_narrative.py",
+        "src/railinsight/ui/pages/q3.py",
         title="Q3 — Profils de ponctualité",
         icon=":material/scatter_plot:",
-    ),
-    st.Page(
-        "src/railinsight/ui/pages/q3_lab.py",
-        title="Q3 — Laboratoire",
-        icon=":material/science:",
     ),
     # Q4 — Meryem
     # st.Page(

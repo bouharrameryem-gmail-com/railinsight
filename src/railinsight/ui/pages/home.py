@@ -40,7 +40,7 @@ _QUESTIONS = [
         "Profils de ponctualité",
         "Peut-on regrouper les liaisons par profil de régularité via clustering ?",
         "Bachelard",
-        "src/railinsight/ui/pages/q3_narrative.py",
+        "src/railinsight/ui/pages/q3.py",
     ),
     (
         4,
