@@ -103,6 +103,21 @@ _COLUMN_FAMILIES: dict[str, list[str]] = {
     ],
 }
 
+_FR_MONTHS: list[str] = [
+    "Janvier",
+    "Février",
+    "Mars",
+    "Avril",
+    "Mai",
+    "Juin",
+    "Juillet",
+    "Août",
+    "Septembre",
+    "Octobre",
+    "Novembre",
+    "Décembre",
+]
+
 _COLUMN_HELP: dict[str, str] = {
     "cancellation_rate": "Fraction de trains supprimés / total prévu.",
     "late15_rate": "Fraction de trains arrivés avec > 15 min de retard.",
@@ -330,7 +345,18 @@ class Q3Page(BasePage):
         monthly = self._provider.load_clean_monthly()
         network = self._provider.load_network_monthly()
 
-        years = sorted(monthly["date"].dt.year.dropna().unique().astype(int).tolist())
+        # Build sorted list of "YYYY-MM" strings from the actual dataset
+        months_available = sorted(
+            monthly["date"].dt.to_period("M").dropna().unique().astype(str).tolist()
+        )
+
+        def _fmt_month(ym: str) -> str:
+            """Format 'YYYY-MM' → 'Mois YYYY' in French."""
+            try:
+                y, m = ym.split("-")
+                return f"{_FR_MONTHS[int(m) - 1]} {y}"
+            except Exception:
+                return ym
 
         with st.form(key="q3_params"):
             st.markdown("##### Données")
@@ -341,19 +367,28 @@ class Q3Page(BasePage):
             with col2:
                 adjust = duration_adjust_toggle(key_prefix=self._state.page_key)
 
-            if len(years) >= 2:
-                period = st.select_slider(
-                    "Période analysée",
-                    options=years,
-                    value=(years[0], years[-1]),
-                    key=self._state.widget_key("period"),
-                    help=(
-                        "Restreindre la période modifie quelles liaisons ont "
-                        "assez de mois valides et peut changer les profils."
-                    ),
-                )
+            if len(months_available) >= 2:
+                st.markdown("**Période analysée**")
+                col_start, col_end = st.columns(2)
+                with col_start:
+                    period_start = st.selectbox(
+                        "Début",
+                        options=months_available,
+                        index=0,
+                        format_func=_fmt_month,
+                        key=self._state.widget_key("period_start"),
+                    )
+                with col_end:
+                    period_end = st.selectbox(
+                        "Fin",
+                        options=months_available,
+                        index=len(months_available) - 1,
+                        format_func=_fmt_month,
+                        key=self._state.widget_key("period_end"),
+                    )
             else:
-                period = (years[0], years[-1]) if years else (2018, 2025)
+                period_start = months_available[0] if months_available else "2018-01"
+                period_end = months_available[-1] if months_available else "2025-12"
 
             st.markdown("##### Indicateurs à inclure dans le clustering")
             fs_choice = st.radio(
@@ -458,10 +493,11 @@ class Q3Page(BasePage):
         if submitted:
             with st.spinner("Calcul en cours…"):
                 try:
-                    start_y, end_y = int(period[0]), int(period[1])
-                    monthly_filtered = monthly[
-                        monthly["date"].dt.year.between(start_y, end_y)
-                    ]
+                    # Swap silently if user put end before start
+                    ps = min(period_start, period_end)
+                    pe = max(period_start, period_end)
+                    month_series = monthly["date"].dt.to_period("M").astype(str)
+                    monthly_filtered = monthly[month_series.between(ps, pe)]
                     results = _run_analysis(
                         monthly=monthly_filtered,
                         network=network,
