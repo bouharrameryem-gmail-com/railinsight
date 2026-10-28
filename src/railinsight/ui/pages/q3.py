@@ -346,9 +346,12 @@ class Q3Page(BasePage):
         network = self._provider.load_network_monthly()
 
         # Build sorted list of "YYYY-MM" strings from the actual dataset
-        months_available = sorted(
-            monthly["date"].dt.to_period("M").dropna().unique().astype(str).tolist()
-        )
+        _date_col = monthly["date"]
+        if isinstance(_date_col.dtype, pd.PeriodDtype):
+            _period_strs = _date_col.dropna().astype(str)
+        else:
+            _period_strs = _date_col.dt.to_period("M").dropna().astype(str)
+        months_available = sorted(_period_strs.unique().tolist())
 
         def _fmt_month(ym: str) -> str:
             """Format 'YYYY-MM' → 'Mois YYYY' in French."""
@@ -496,7 +499,11 @@ class Q3Page(BasePage):
                     # Swap silently if user put end before start
                     ps = min(period_start, period_end)
                     pe = max(period_start, period_end)
-                    month_series = monthly["date"].dt.to_period("M").astype(str)
+                    _dc = monthly["date"]
+                    if isinstance(_dc.dtype, pd.PeriodDtype):
+                        month_series = _dc.astype(str)
+                    else:
+                        month_series = _dc.dt.to_period("M").astype(str)
                     monthly_filtered = monthly[month_series.between(ps, pe)]
                     results = _run_analysis(
                         monthly=monthly_filtered,

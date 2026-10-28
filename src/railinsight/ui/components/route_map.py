@@ -246,9 +246,7 @@ def route_map(
             extra = ""
             if hover_extras:
                 parts = [
-                    f"{k_}: {v[idx]}"
-                    for k_, v in hover_extras.items()
-                    if idx < len(v)
+                    f"{k_}: {v[idx]}" for k_, v in hover_extras.items() if idx < len(v)
                 ]
                 extra = "<br>" + "<br>".join(parts)
             hover_labels.append(f"<b>{route}</b><br>{names[cluster_id]}{extra}")
