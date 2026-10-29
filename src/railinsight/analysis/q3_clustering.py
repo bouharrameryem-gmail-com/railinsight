@@ -18,6 +18,7 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
+from scipy.cluster.hierarchy import linkage
 from scipy.optimize import linear_sum_assignment
 from scipy.stats import spearmanr
 from sklearn.cluster import AgglomerativeClustering, KMeans
@@ -391,12 +392,21 @@ def silhouette_curve(
     records = []
     for k in k_range:
         labels = fit_clustering(x_scaled, algorithm, k, random_state=random_state)
+        # Inertia = sum of squared distances to the nearest cluster center.
+        # Meaningful for all algorithms; the elbow is clearest for K-means.
+        inertia = 0.0
+        for c in range(k):
+            mask = labels == c
+            if mask.any():
+                center = x_scaled[mask].mean(axis=0)
+                inertia += float(np.sum((x_scaled[mask] - center) ** 2))
         records.append(
             {
                 "k": k,
                 "silhouette": float(silhouette_score(x_scaled, labels)),
                 "davies_bouldin": float(davies_bouldin_score(x_scaled, labels)),
                 "min_cluster_size": int(np.bincount(labels).min()),
+                "inertia": inertia,
             }
         )
     return pd.DataFrame(records)
@@ -606,3 +616,18 @@ def compare_configurations(
         "n_changed": int(changed_mask.sum()),
         "changed_routes": changed_routes,
     }
+
+
+def compute_ward_linkage(x_scaled: np.ndarray) -> np.ndarray:
+    """Compute Ward hierarchical linkage matrix for the scaled feature matrix.
+
+    Args:
+        x_scaled: (n_routes, n_features) array already scaled.
+
+    Returns:
+        Linkage matrix (n-1, 4) as returned by scipy.cluster.hierarchy.linkage.
+        Each row: [child_a, child_b, distance, cluster_size].
+    """
+    if len(x_scaled) < 2:  # noqa: PLR2004
+        raise InsufficientDataError("Ward linkage requiert au moins 2 observations.")
+    return linkage(x_scaled, method="ward")

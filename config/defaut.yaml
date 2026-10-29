@@ -8,6 +8,13 @@ chemins:                      # relatifs à la racine du projet
   traitees: data/processed
   modeles: models
 
+# Analyse 3 : profils de ponctualité (notebooks/Q3_punctuality_profiles_EDA.ipynb)
+q3:
+  feature_set: "v3"         # jeu d'indicateurs : v3 | fixed | composite
+  exclusion: "known"        # mois exclus : none | known | data
+  min_months: 24            # liaisons avec moins de mois valides : ignorées
+  scaler: "power"           # mise à l'échelle : power (Yeo-Johnson) | standard
+
 # Analyse 4 : score de fiabilité (notebooks/score_fiabilite.ipynb)
 score_fiabilite:
   periode_debut: null         # "AAAA-MM" entre guillemets, ou null = depuis le début
