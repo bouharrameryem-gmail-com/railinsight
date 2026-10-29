@@ -45,11 +45,16 @@ pages = [
         icon=":material/draft:",
     ),
     # Q1 — Michelle
-    # st.Page(
-    #     "src/railinsight/ui/pages/q1_unreliable_routes.py",
-    #     title="Q1 — Liaisons peu fiables",
-    #     icon=":material/trending_down:",
-    # ),
+    st.Page(
+        "src/railinsight/ui/pages/1_liaisons_classement.py",
+        title="Q1 — Classement des liaisons",
+        icon=":material/leaderboard:",
+    ),
+    st.Page(
+        "src/railinsight/ui/pages/2_liaisons_evolution.py",
+        title="Q1 — Évolution de la fiabilité",
+        icon=":material/trending_up:",
+    ),
     # Q2 — Éric
     # st.Page(
     #     "src/railinsight/ui/pages/q2_departure_stations.py",

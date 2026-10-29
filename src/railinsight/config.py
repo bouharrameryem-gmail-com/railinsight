@@ -66,6 +66,30 @@ class Chemins:
 
 
 @dataclass(frozen=True)
+class LiaisonsFiabilite:
+    """Paramètres de l'analyse « liaisons les moins fiables » (Q1)."""
+
+    covid_debut: str
+    covid_fin: str
+    top_n: int
+
+    def __post_init__(self) -> None:
+        """Valide la fenêtre exclue de la tendance et la taille du classement."""
+        for cle in ("covid_debut", "covid_fin"):
+            valeur = getattr(self, cle)
+            if valeur is None:
+                raise ConfigInvalide(
+                    f"clé absente ou vide : 'liaisons_fiabilite.{cle}'"
+                )
+            verifier_periode(f"liaisons_fiabilite.{cle}", valeur)
+        if self.covid_debut > self.covid_fin:
+            raise ConfigInvalide(
+                "'liaisons_fiabilite.covid_debut' doit être <= 'covid_fin'"
+            )
+        verifier_entier("liaisons_fiabilite.top_n", self.top_n, minimum=1)
+
+
+@dataclass(frozen=True)
 class ScoreFiabilite:
     """Paramètres de l'analyse « score de fiabilité » (notebook de Meryem)."""
 
@@ -116,6 +140,7 @@ class Config:
 
     graine: int
     chemins: Chemins
+    liaisons_fiabilite: LiaisonsFiabilite
     score_fiabilite: ScoreFiabilite
     # >>> et un champ ici, avec le même nom que la section du YAML <<<
 
