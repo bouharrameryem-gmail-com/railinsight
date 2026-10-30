@@ -307,7 +307,7 @@ Au-delà, les six parts de la ligne passent à NaN.
 
 | Question | Source | Unité | Périmètre | Lignes retirées | Invalidations |
 |---|---|---|---|---|---|
-| Q1 (`analysis/reliability.py`, notebook `01_liaisons_moins_fiables`) | `lire_donnees` + `nettoyer_regularite` | Liaison orientée | National + International | 0 train prévu (`retirer_sans_train`) | Aucune |
+| Q1 (notebook `01_liaisons_moins_fiables`) | `lire_donnees` + `nettoyer_regularite` | Liaison orientée | National + International | 0 train prévu (`retirer_sans_train`) | D4c (2 mois) |
 | Q2 (`eric-explore2`) | CSV brut | Gare de départ | **National seulement** | Aucune | Aucune |
 | Q3 (`Q3_punctuality_profiles_EDA`) | CSV brut, nettoyage dans le notebook | Liaison orientée | National + International | D2 ; liaisons < 24 mois | D1 à D10 |
 | Q4 (`score_fiabilite`) | CSV brut | Liaison **non orientée** (65 retenues) | National + International | 0 train prévu ; liaisons < 100 trains | Aucune |
@@ -420,7 +420,10 @@ biaise les retards à la baisse.
 - **Q3** : les 19 mois sont exclus du calcul des indicateurs.
 - **Q1** : seule la fenêtre COVID **2020-03 → 2021-06** (`liaisons_fiabilite.covid_debut`,
   `covid_fin` dans `config/defaut.yaml`) est exclue, et **uniquement de la pente de tendance** ; les mois
-  restent dans les séries affichées.
+  restent dans les séries affichées. Le notebook compare cette règle à la liste des
+  19 mois et à l'absence d'exclusion : le classement des liaisons ne change pas, mais la
+  tendance du réseau passe de −0,35 point par an (fenêtre COVID) à +0,14 point par an
+  (19 mois exclus), et le nombre de liaisons en dégradation de 26 à 82 sur 130.
 - **Q2** : aucune exclusion dans le code. Le cadrage du notebook prévoit une variante
   « toute la période sans 2020 » ; elle est à rendre explicite.
 - **Q4** : aucune exclusion ; période réglable (`periode_debut`, `periode_fin` dans
@@ -528,7 +531,7 @@ Il n'existe pas encore de script unique : le jeu dérivé est recalculé à la v
 2. Vérifier le schéma : `comparer_colonnes(chemin)` (`analysis/donnees.py`) doit
    renvoyer deux listes vides.
 3. Lancer les tests : `uv run pytest`.
-4. Réexécuter les notebooks Q1, Q3 et Q4, puis relancer l'application
+4. Réexécuter les notebooks Q1 à Q4, puis relancer l'application
    (`uv run streamlit run app.py`).
 5. Recontrôler les chiffres des sections 2, 4, 10 et 11, et la liste de la
    section 12 si de nouveaux mois exceptionnels apparaissent.
@@ -546,6 +549,7 @@ Sorties prévues (chemins déclarés dans `config.py`, **pas encore produites**)
 | 2026-10-29 | 1.1 | Partie B : jeu dérivé, décisions de nettoyage, anomalies 2025, mois exceptionnels, variables dérivées, limites, maintenance |
 | 2026-10-29 | 1.2 | Alignement sur le cours (session 6) : collecte (mesure, définition composite), composition (biais, mécanismes de manque), licence ODbL, provenance, maintenance |
 | 2026-10-29 | 1.3 | Intégration des choix de Q2 (`eric-explore2`) et Q4 (`score_fiabilite`) : périmètres, exclusions, variables, limites |
+| 2026-10-30 | 1.4 | Q1 : invalidation D4c, sensibilité de la tendance à la règle d'exclusion des mois exceptionnels |
 
 ## 16. Distribution du jeu dérivé
 
