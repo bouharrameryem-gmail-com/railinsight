@@ -49,9 +49,6 @@ def add_delay_categories(table: pd.DataFrame) -> pd.DataFrame:
         `retard_non_heritees` and `retard_externes`.
     """
     retour = table.copy()
-    toutes = CAUSES_HERITEES + CAUSES_NON_HERITEES + CAUSES_EXTERNES
-    masque = retour[toutes].isna().all(axis=1)
-    retour = retour[~masque].copy()
     retour["retard_heritees"] = retour["retards_arrivee"] * (
         retour[CAUSES_HERITEES].sum(axis=1) / 100
     )
