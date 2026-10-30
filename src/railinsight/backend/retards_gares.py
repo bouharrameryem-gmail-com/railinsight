@@ -3,12 +3,13 @@ from dataclasses import dataclass
 import pandas as pd
 
 from railinsight.analysis.causes_retards import (
-    add_delay_categories,
-    add_delay_shares,
-    aggregate_by_station,
-    filter_scope,
+    agreger_par_gare,
+    ajouter_categories_retard,
+    ajouter_parts_retard,
+    filtrer_perimetre_national,
 )
 from railinsight.backend.dataloader import charger_donnees
+
 
 @dataclass(frozen=True, eq=False)
 class RetardsParGare:
@@ -31,7 +32,9 @@ def calculer_retards_par_gare(
     Returns:
         Un `RetardsParGare` contenant les tables aux trois niveaux de temps.
     """
-    table = add_delay_categories(filter_scope(raw, exclude_2020=exclude_2020))
+    table = ajouter_categories_retard(
+        filtrer_perimetre_national(raw, exclude_2020=exclude_2020)
+    )
     return RetardsParGare(
         overall=calculer_retards_par_periode(table, None),
         by_year=calculer_retards_par_periode(table, "annee"),
@@ -44,6 +47,8 @@ def charger_retards_par_gare(exclude_2020: bool = True) -> RetardsParGare:
     return calculer_retards_par_gare(charger_donnees(), exclude_2020)
 
 
-def calculer_retards_par_periode(table: pd.DataFrame, niveau: str | None) -> pd.DataFrame:
+def calculer_retards_par_periode(
+    table: pd.DataFrame, niveau: str | None
+) -> pd.DataFrame:
     """Agrège les retards par gare et calcule les parts par catégorie."""
-    return add_delay_shares(aggregate_by_station(table, niveau))
+    return ajouter_parts_retard(agreger_par_gare(table, niveau))

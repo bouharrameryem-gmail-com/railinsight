@@ -6,7 +6,12 @@ import re
 import pandas as pd
 import pytest
 
-from railinsight.analysis.lecture_donnees import NOMBRE, SCHEMA, lire_donnees, normaliser
+from railinsight.analysis.lecture_donnees import (
+    NOMBRE,
+    SCHEMA,
+    lire_donnees,
+    normaliser,
+)
 from railinsight.exceptions import DonneesInvalides
 
 SOURCES = [c.source for c in SCHEMA]

@@ -1,24 +1,20 @@
-"""Schéma du CSV de régularité SNCF : colonnes attendues, noms propres et types.
- 
-C'est le contrat entre le fichier de la SNCF et le reste du code. Si la SNCF
-renomme une colonne, on ne change que `source` ici : tout le reste du code
-continue d'utiliser `nom`.
-"""
- 
+"""Définit le schéma attendu du fichier CSV de régularité SNCF."""
+
 from dataclasses import dataclass
- 
+
 TEXTE = "texte"
 NOMBRE = "nombre"
- 
- 
+
+
 @dataclass(frozen=True)
 class Colonne:
-    """Une colonne attendue : son nom dans le CSV, son nom propre, son type."""
- 
+    """Décrit une colonne du CSV : nom source, nom interne et type."""
+
     source: str
     nom: str
     genre: str
- 
+
+
 SCHEMA: tuple[Colonne, ...] = (
     Colonne("Date", "date", TEXTE),  # format AAAA-MM
     Colonne("Service", "service", TEXTE),
@@ -28,8 +24,8 @@ SCHEMA: tuple[Colonne, ...] = (
     Colonne("Nombre de circulations prévues", "prevus", NOMBRE),
     Colonne("Nombre de trains annulés", "annules", NOMBRE),
     Colonne("Nombre de trains en retard au départ", "retards_depart", NOMBRE),
-    # « retardes » = moyenne sur les seuls trains en retard ;
-    # « retard_moyen_ » sans « retardes » = moyenne sur tous les trains.
+    # Avec « retardes » : moyenne sur les seuls trains en retard.
+    # Sans « retardes » : moyenne sur tous les trains.
     Colonne(
         "Retard moyen des trains en retard au départ",
         "retard_moyen_retardes_depart",

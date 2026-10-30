@@ -76,15 +76,13 @@ class TemplatePage(BasePage):
 
     def _render_method_box(self) -> None:
         with st.expander("Méthode et limites", expanded=False):
-            st.markdown(
-                """
+            st.markdown("""
                 **Méthode :** décrivez brièvement comment vous avez construit
                 vos indicateurs (formule, règle d'exclusion des mois, seuil).
 
                 **Limites :** signalez ce que vos résultats ne peuvent pas
                 montrer (biais de sélection, définitions SNCF, mois exceptionnels…).
-                """
-            )
+                """)
 
 
 # Script entry point.

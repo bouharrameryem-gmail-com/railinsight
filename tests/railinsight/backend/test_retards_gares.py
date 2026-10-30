@@ -7,8 +7,8 @@ from railinsight.backend.retards_gares import (
 def test_calculer_retards_par_gare(raw):
     res = calculer_retards_par_gare(raw)
 
-    assert len(res.overall) == 2   # PARIS, LYON
-    assert len(res.by_year) == 2   # PARIS 2024, LYON 2024
+    assert len(res.overall) == 2  # PARIS, LYON
+    assert len(res.by_year) == 2  # PARIS 2024, LYON 2024
     assert len(res.by_month) == 3  # PARIS janvier, PARIS février, LYON janvier
     paris = res.overall.set_index("gare_depart").loc["PARIS"]
     assert paris["retard_non_heritees"] == 110

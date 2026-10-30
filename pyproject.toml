@@ -30,6 +30,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "black>=26.10.1",
     "furo>=2025.12.19",
     "interrogate>=1.7.0",
     "jupyterlab>=4.6.4",
