@@ -34,8 +34,13 @@ def filtrer_perimetre_national(
 def ajouter_categories_retard(table: pd.DataFrame) -> pd.DataFrame:
     """Calcule le nombre de retards pour chaque catégorie de cause."""
     retour = table.copy()
+    toutes = CAUSES_HERITEES + CAUSES_NON_HERITEES + CAUSES_EXTERNES
+    masque = retour[toutes].isna().all(axis=1)
+    retour = retour[~masque].copy()
+
     for colonne, causes in GROUPES_CAUSES.items():
         retour[colonne] = retour["retards_arrivee"] * retour[causes].sum(axis=1) / 100
+
     return retour
 
 
