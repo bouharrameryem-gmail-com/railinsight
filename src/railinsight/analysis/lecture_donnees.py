@@ -8,11 +8,11 @@ colonnes portent des noms propres et stables (voir SCHEMA).
 import logging
 import re
 import unicodedata
-from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
 
+from railinsight.analysis.shema import SCHEMA
 from railinsight.exceptions import DonneesInvalides
 
 logger = logging.getLogger(__name__)
@@ -22,79 +22,11 @@ NOMBRE = "nombre"
 SEPARATEUR = ";"
 
 
-@dataclass(frozen=True)
-class Colonne:
-    """Une colonne attendue : son nom dans le CSV, son nom propre, son type."""
-
-    source: str
-    nom: str
-    genre: str
-
-
-# Contrat de schéma : colonnes attendues, dans l'ordre du DataFrame renvoyé.
-# `source` = nom dans le CSV de la SNCF ; `nom` = nom utilisé partout dans le code.
-# Si la SNCF renomme une colonne, on ne change que `source` : le reste du code
-# continue d'utiliser `nom`. Les trois colonnes « Commentaire ... » (texte libre,
-# presque vides) sont volontairement absentes. Pour en exposer une, ajoutez-la ici.
-SCHEMA: tuple[Colonne, ...] = (
-    Colonne("Date", "date", TEXTE),  # format AAAA-MM
-    Colonne("Service", "service", TEXTE),
-    Colonne("Gare de départ", "gare_depart", TEXTE),
-    Colonne("Gare d'arrivée", "gare_arrivee", TEXTE),
-    Colonne("Durée moyenne du trajet", "duree_moyenne", NOMBRE),
-    Colonne("Nombre de circulations prévues", "prevus", NOMBRE),
-    Colonne("Nombre de trains annulés", "annules", NOMBRE),
-    Colonne("Nombre de trains en retard au départ", "retards_depart", NOMBRE),
-    # « retardes » = moyenne sur les seuls trains en retard ;
-    # « retard_moyen_ » sans « retardes » = moyenne sur tous les trains.
-    Colonne(
-        "Retard moyen des trains en retard au départ",
-        "retard_moyen_retardes_depart",
-        NOMBRE,
-    ),
-    Colonne("Retard moyen de tous les trains au départ", "retard_moyen_depart", NOMBRE),
-    Colonne("Nombre de trains en retard à l'arrivée", "retards_arrivee", NOMBRE),
-    Colonne(
-        "Retard moyen des trains en retard à l'arrivée",
-        "retard_moyen_retardes_arrivee",
-        NOMBRE,
-    ),
-    Colonne(
-        "Retard moyen de tous les trains à l'arrivée", "retard_moyen_arrivee", NOMBRE
-    ),
-    Colonne("Nombre trains en retard > 15min", "retards_sup_15min", NOMBRE),
-    Colonne(
-        "Retard moyen trains en retard > 15 (si liaison concurrencée par vol)",
-        "retard_moyen_sup_15min_vol",
-        NOMBRE,
-    ),
-    Colonne("Nombre trains en retard > 30min", "retards_sup_30min", NOMBRE),
-    Colonne("Nombre trains en retard > 60min", "retards_sup_60min", NOMBRE),
-    Colonne("Prct retard pour causes externes", "prct_cause_externe", NOMBRE),
-    Colonne(
-        "Prct retard pour cause infrastructure", "prct_cause_infrastructure", NOMBRE
-    ),
-    Colonne("Prct retard pour cause gestion trafic", "prct_cause_trafic", NOMBRE),
-    Colonne("Prct retard pour cause matériel roulant", "prct_cause_materiel", NOMBRE),
-    Colonne(
-        "Prct retard pour cause gestion en gare et réutilisation de matériel",
-        "prct_cause_gare",
-        NOMBRE,
-    ),
-    Colonne(
-        "Prct retard pour cause prise en compte voyageurs "
-        "(affluence, gestions PSH, correspondances)",
-        "prct_cause_voyageurs",
-        NOMBRE,
-    ),
-)
-
-
 def comparer_colonnes(chemin: str | Path) -> tuple[list[str], list[str]]:
     """Compare les en-têtes réels du fichier au SCHEMA (reconnaissance tolérante).
-
+ 
     Utile pour découvrir un nouvel export ou compléter le schéma.
-
+ 
     Returns:
         (hors_schema, manquantes) : colonnes du fichier que le schéma ignore, puis
         colonnes du schéma (nom CSV) absentes du fichier.
@@ -109,7 +41,7 @@ def comparer_colonnes(chemin: str | Path) -> tuple[list[str], list[str]]:
 
 def normaliser(texte: str) -> str:
     """Minuscules, sans accents, ponctuation et espaces réduits à un espace.
-
+ 
     Sert à reconnaître un en-tête malgré des différences de casse, d'accents,
     d'espaces ou d'apostrophe : « Gare d'arrivée » == « GARE D’ARRIVEE ».
     """
@@ -157,9 +89,9 @@ def _lire_csv(chemin: str | Path) -> pd.DataFrame:
         return pd.read_csv(
             chemin,
             sep=SEPARATEUR,
-            dtype=str,  # on convertit nous-mêmes, colonne par colonne
-            encoding="utf-8-sig",  # retire le BOM ajouté par Excel
-            engine="python",  # tolère les champs multi-lignes (voir DATASHEET)
+            dtype=str,  
+            encoding="utf-8-sig",
+            engine="python",
         )
     except pd.errors.EmptyDataError as exc:
         raise DonneesInvalides(f"fichier vide : {chemin}") from exc
@@ -171,7 +103,6 @@ def _lire_csv(chemin: str | Path) -> pd.DataFrame:
 
 def _en_nombre(serie: pd.Series, nom: str) -> pd.Series:
     """Convertit en nombres ; signale les valeurs transformées en NaN."""
-    # float64 toujours : sans cela, le type varierait (int ou float) selon le contenu
     convertie = pd.to_numeric(serie.str.strip(), errors="coerce").astype("float64")
     perdues = int(serie.notna().sum() - convertie.notna().sum())
     if perdues:

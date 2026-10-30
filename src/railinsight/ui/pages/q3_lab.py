@@ -1,17 +1,17 @@
 """Q3 — Laboratoire de clustering (page d'exploration).
-
+ 
 Permet de choisir librement l'algorithme, ses hyperparamètres et les paramètres
 de prétraitement, puis de visualiser les résultats et leur robustesse.
 Supporte un comparateur A/B entre deux configurations.
-
+ 
 Script entry point — executed by Streamlit when this file is a st.Page target.
 """
-
+ 
 from __future__ import annotations
-
+ 
 import logging
 from typing import Literal
-
+ 
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -19,21 +19,29 @@ import plotly.graph_objects as go
 import streamlit as st
 from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
-
-from railinsight.analysis.q3_clustering import (
+ 
+from railinsight.analysis.clustering import (
+    GRAINE,
+    MIN_LIAISONS_CLUSTERING,
+    Algorithme,
+    auto_select_k,
+    fit_clustering,
+    scale_features,
+)
+from railinsight.analysis.indicateurs_liaisons import (
     ALL_FEATURE_COLS,
     FEATURE_SETS,
+    Exclusion,
     adjust_for_duration,
-    auto_select_k,
     build_q3_features,
+    detect_redundancy,
+)
+from railinsight.analysis.validation_clustering import (
     compare_configurations,
     compute_ari_bootstrap,
     compute_ari_seeds,
     compute_eta2,
-    detect_redundancy,
-    fit_clustering,
     permutation_test,
-    scale_features,
     silhouette_curve,
 )
 from railinsight.exceptions import InsufficientDataError, RailInsightError
@@ -49,13 +57,14 @@ from railinsight.ui.components.filters import (
 from railinsight.ui.components.kpi_card import kpi_row
 from railinsight.ui.components.method_box import method_box
 from railinsight.ui.components.pca_panel import pca_panel
+from railinsight.ui.donnees_regularite import charger_table_regularite
 from railinsight.ui.providers import get_provider
 from railinsight.ui.state.base_state import PageState
 from railinsight.ui.theme.tokens import CLUSTER_COLORS
 from railinsight.utils.formatting import fmt_number
-
+ 
 logger = logging.getLogger(__name__)
-
+ 
 _ALGO_LABELS: dict[str, str] = {
     "kmeans": "K-means",
     "ward": "Hiérarchique (Ward)",
@@ -71,39 +80,40 @@ _FEATURE_SET_LABELS: dict[str, str] = {
     "composite": "composite v1 (arrivée + retard moyen)",
     "custom": "Sélection libre",
 }
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
+ 
+ 
 def _run_lab_analysis(
-    monthly: pd.DataFrame,
-    network: pd.DataFrame,
+    table: pd.DataFrame,
     feature_set: str,
     custom_cols: list[str],
-    exclusion: Literal["none", "known", "data"],
+    exclusion: Exclusion,
     min_months: int,
     adjust_duration: bool,
     scaler_type: Literal["power", "standard"],
-    algorithm: Literal["kmeans", "ward", "gmm"],
+    algorithm: Algorithme,
     k_mode: str,
     k_manual: int,
     n_init: int,
     covariance_type: Literal["full", "tied", "diag", "spherical"],
 ) -> dict:
-    """Run the full Q3 analysis with the given parameters.
-
-    Returns a dict with all results needed to render the lab outputs.
+    """Lance l'analyse Q3 complète avec les paramètres donnés.
+ 
+    Args:
+        table: Résultat de `nettoyer_regularite`, filtré sur un service.
+ 
+    Returns:
+        Un dict avec tous les résultats nécessaires à l'affichage du laboratoire.
     """
-    features = build_q3_features(
-        monthly, network, exclusion=exclusion, min_months=min_months
-    )
+    features = build_q3_features(table, exclusion=exclusion, min_months=min_months)
     base_cols: list[str] = (
         custom_cols if feature_set == "custom" else FEATURE_SETS[feature_set]
     )
-
+ 
     if adjust_duration:
         features, _ = adjust_for_duration(features, base_cols)
         input_cols = [
@@ -111,20 +121,20 @@ def _run_lab_analysis(
         ]
     else:
         input_cols = base_cols
-
+ 
     available_cols = [c for c in input_cols if c in features.columns]
     x_df = features[available_cols].dropna()  # noqa: N806
-
-    if len(x_df) < 4:  # noqa: PLR2004
+ 
+    if len(x_df) < MIN_LIAISONS_CLUSTERING:
         raise InsufficientDataError("Pas assez de liaisons après filtrage.")
-
+ 
     x_scaled, scaler = scale_features(x_df, scaler_type)  # noqa: N806
-
+ 
     if k_mode == "auto":
         k = auto_select_k(x_scaled, algorithm)
     else:
         k = k_manual
-
+ 
     labels = fit_clustering(
         x_scaled,
         algorithm,
@@ -133,18 +143,18 @@ def _run_lab_analysis(
         covariance_type=covariance_type,
     )
     sil = float(silhouette_score(x_scaled, labels))
-
-    pca_model = PCA(n_components=2, random_state=42).fit(x_scaled)
+ 
+    pca_model = PCA(n_components=2, random_state=GRAINE).fit(x_scaled)
     x_pca = pca_model.transform(x_scaled)  # noqa: N806
-
+ 
     centroids_scaled = np.array([x_scaled[labels == c].mean(axis=0) for c in range(k)])
     try:
         centroids_original = scaler.inverse_transform(centroids_scaled)
     except Exception:
         centroids_original = centroids_scaled
-
+ 
     redundant = detect_redundancy(features, base_cols)
-
+ 
     return {
         "features": features,
         "routes": x_df.index.tolist(),
@@ -170,45 +180,45 @@ def _run_lab_analysis(
             "k": k,
         },
     }
-
-
+ 
+ 
 def _results_key(slot: str) -> str:
     return f"q3_lab__results_{slot}"
-
-
+ 
+ 
 # ---------------------------------------------------------------------------
 # Page class
 # ---------------------------------------------------------------------------
-
-
+ 
+ 
 class Q3LabPage(BasePage):
     """Interactive Q3 clustering laboratory.
-
+ 
     Users choose algorithm, hyperparameters and preprocessing options, then
     run the analysis on demand. Supports A/B configuration comparison.
-
+ 
     Args:
         provider: Data provider satisfying the DataProvider protocol.
     """
-
+ 
     def __init__(self, provider: DataProvider) -> None:
         super().__init__(provider)
         self._state = PageState(page_key="q3_lab")
-
+ 
     @property
     def question_number(self) -> int:
         return 3
-
+ 
     @property
     def question_title(self) -> str:
         return "Laboratoire Q3 — Profils de ponctualité"
-
+ 
     @property
     def author(self) -> str:
         return "Bachelard"
-
+ 
     # --- Template method sections ---
-
+ 
     def _render_key_figures(self) -> None:
         results = st.session_state.get(_results_key("current"))
         if results is None:
@@ -221,7 +231,7 @@ class Q3LabPage(BasePage):
                 ]
             )
             return
-
+ 
         labels = results["labels"]
         k = results["k"]
         sil = results["silhouette"]
@@ -238,14 +248,13 @@ class Q3LabPage(BasePage):
                 {"label": "Plus petit groupe", "value": str(int(counts.min()))},
             ]
         )
-
+ 
     def _render_controls(self) -> None:
         """Render parameter form and trigger analysis on submission."""
         self._sync_params_from_url()
-
-        monthly = self._provider.load_clean_monthly()
-        network = self._provider.load_network_monthly()
-
+ 
+        table = charger_table_regularite()
+ 
         with st.form(key="q3_lab_params"):
             st.markdown("##### Données")
             col1, col2 = st.columns(2)
@@ -254,7 +263,7 @@ class Q3LabPage(BasePage):
                 min_months = min_months_filter(key_prefix=self._state.page_key)
             with col2:
                 adjust = duration_adjust_toggle(key_prefix=self._state.page_key)
-
+ 
             st.markdown("##### Indicateurs")
             fs_choice = st.radio(
                 "Jeu d'indicateurs",
@@ -272,7 +281,7 @@ class Q3LabPage(BasePage):
                     default=FEATURE_SETS["v3"],
                     key=self._state.widget_key("custom_cols"),
                 )
-
+ 
             st.markdown("##### Prétraitement")
             scaler_choice = st.radio(
                 "Mise à l'échelle",
@@ -282,7 +291,7 @@ class Q3LabPage(BasePage):
                 key=self._state.widget_key("scaler"),
                 horizontal=True,
             )
-
+ 
             st.markdown("##### Algorithme et hyperparamètres")
             algo = st.radio(
                 "Algorithme",
@@ -308,7 +317,7 @@ class Q3LabPage(BasePage):
                 key=self._state.widget_key("k_manual"),
                 disabled=(k_mode == "auto"),
             )
-
+ 
             # Algorithm-specific hyperparameters
             n_init = 50
             cov_type: Literal["full", "tied", "diag", "spherical"] = "full"
@@ -343,17 +352,16 @@ class Q3LabPage(BasePage):
                     ),
                 )
                 cov_type = cov_choice  # type: ignore[assignment]
-
+ 
             submitted = st.form_submit_button(
                 "Lancer l'analyse", type="primary", use_container_width=True
             )
-
+ 
         if submitted:
             with st.spinner("Calcul en cours…"):
                 try:
                     results = _run_lab_analysis(
-                        monthly=monthly,
-                        network=network,
+                        table=table,
                         feature_set=fs_choice,
                         custom_cols=custom_cols,
                         exclusion=exclusion,
@@ -379,7 +387,7 @@ class Q3LabPage(BasePage):
                 except Exception:
                     logger.exception("Q3 lab analysis failed")
                     st.error("L'analyse a échoué. Vérifiez les paramètres.")
-
+ 
     def _render_body(self) -> None:
         results = st.session_state.get(_results_key("current"))
         if results is None:
@@ -387,7 +395,7 @@ class Q3LabPage(BasePage):
                 "Configurez les paramètres ci-dessus et cliquez **Lancer l'analyse**."
             )
             return
-
+ 
         self._show_redundancy_warnings(results)
         self._render_silhouette_section(results)
         st.divider()
@@ -400,7 +408,7 @@ class Q3LabPage(BasePage):
         self._render_robustness_section(results)
         st.divider()
         self._render_ab_comparator()
-
+ 
     def _render_method_box(self) -> None:
         results = st.session_state.get(_results_key("current"))
         if results is None:
@@ -415,7 +423,7 @@ Ajustement durée : `{"oui" if params["adjust_duration"] else "non"}` ·
 Mise à l'échelle : `{params["scaler"]}` ·
 Algorithme : `{params["algorithm"]}` ·
 k : `{params["k"]}`.
-
+ 
 **Silhouette :** mesure la cohésion des groupes (−1 à 1).
 **Davies-Bouldin :** mesure la séparation des groupes (plus bas = mieux).
 **ARI :** Adjusted Rand Index, robustesse entre deux solutions
@@ -424,11 +432,11 @@ k : `{params["k"]}`.
 expliquée par l'appartenance au groupe.
 """,
         )
-
+ 
     # ---------------------------------------------------------------------------
     # Body sub-sections
     # ---------------------------------------------------------------------------
-
+ 
     def _show_redundancy_warnings(self, results: dict) -> None:
         for col_a, col_b, rho in results["redundant"]:
             st.warning(
@@ -436,7 +444,7 @@ expliquée par l'appartenance au groupe.
                 f"sont très corrélés (ρ de Spearman = {rho:+.2f}). "
                 "Inclure les deux surpondère cette dimension dans le clustering."
             )
-
+ 
     def _render_silhouette_section(self, results: dict) -> None:
         st.markdown("#### Courbes de sélection de k")
         with st.spinner("Calcul des scores pour k = 2 à 8…"):
@@ -445,7 +453,7 @@ expliquée par l'appartenance au groupe.
                 results["algorithm"],
                 k_range=range(2, 9),
             )
-
+ 
         tab_sil, tab_db, tab_size = st.tabs(
             ["Silhouette", "Davies-Bouldin", "Taille min. du groupe"]
         )
@@ -507,7 +515,7 @@ expliquée par l'appartenance au groupe.
                     "il peut refléter des outliers, pas un profil structuré."
                 ),
             )
-
+ 
     def _render_pca_section(self, results: dict) -> None:
         labels = results["labels"]
         k = results["k"]
@@ -519,15 +527,15 @@ expliquée par l'appartenance au groupe.
             labels=labels,
             label_names=label_names,
         )
-
+ 
     def _render_centroid_heatmap(self, results: dict) -> None:
         k = results["k"]
         base_cols = results["base_cols"]
         centroids = results["centroids_original"]
-
+ 
         row_labels = [f"Profil {c + 1}" for c in range(k)]
         col_labels = [c.replace("_", " ") for c in base_cols]
-
+ 
         fig = go.Figure(
             go.Heatmap(
                 z=centroids,
@@ -546,10 +554,12 @@ expliquée par l'appartenance au groupe.
                 "Rouge = valeur élevée relative, vert = valeur faible."
             ),
         )
-
+ 
     def _render_eta2_section(self, results: dict) -> None:
         st.markdown("#### Pouvoir discriminant des indicateurs (η²)")
-        features = results["features"]
+        # `labels` ne couvre que les liaisons sans valeur manquante (x_df après
+        # dropna) : on aligne `features` sur ces mêmes liaisons, dans le même ordre.
+        features = results["features"].loc[results["routes"]]
         labels = results["labels"]
         # Evaluate on all available Q3 columns
         eval_cols = [c for c in ALL_FEATURE_COLS if c in features.columns]
@@ -576,12 +586,12 @@ expliquée par l'appartenance au groupe.
                 "parfaitement. "
                 "Un η² > 0,3 est considéré élevé dans ce contexte."
             )
-
+ 
     def _render_robustness_section(self, results: dict) -> None:
         st.markdown("#### Robustesse de la solution")
-
+ 
         col_seeds, col_bootstrap, col_perm = st.columns(3)
-
+ 
         with col_seeds:
             if st.button(
                 "Tester la stabilité (seeds)",
@@ -596,7 +606,7 @@ expliquée par l'appartenance au groupe.
                         results["X_scaled"], results["algorithm"], results["k"]
                     )
                     st.session_state[self._state.widget_key("ari_seeds")] = ari_s
-
+ 
             ari_s = st.session_state.get(self._state.widget_key("ari_seeds"))
             if ari_s is not None:
                 st.metric(
@@ -604,7 +614,7 @@ expliquée par l'appartenance au groupe.
                     f"{ari_s.mean():.3f}",
                     help="ARI > 0,8 : solution stable.",
                 )
-
+ 
         with col_bootstrap:
             if st.button(
                 "Tester la stabilité (bootstrap)",
@@ -618,7 +628,7 @@ expliquée par l'appartenance au groupe.
                         results["X_scaled"], results["algorithm"], results["k"]
                     )
                     st.session_state[self._state.widget_key("ari_bootstrap")] = ari_b
-
+ 
             ari_b = st.session_state.get(self._state.widget_key("ari_bootstrap"))
             if ari_b is not None:
                 st.metric(
@@ -626,7 +636,7 @@ expliquée par l'appartenance au groupe.
                     f"{ari_b.median():.3f}",
                     delta=f"min {ari_b.min():.3f}",
                 )
-
+ 
         with col_perm:
             if st.button(
                 "Test de permutation",
@@ -641,7 +651,7 @@ expliquée par l'appartenance au groupe.
                         results["X_scaled"], results["algorithm"], results["k"]
                     )
                     st.session_state[self._state.widget_key("perm")] = perm
-
+ 
             perm = st.session_state.get(self._state.widget_key("perm"))
             if perm is not None:
                 st.metric(
@@ -653,12 +663,12 @@ expliquée par l'appartenance au groupe.
                         "p < 0,05 : la structure dépasse le niveau du hasard."
                     ),
                 )
-
+ 
     def _render_ab_comparator(self) -> None:
         st.markdown("#### Comparateur A / B")
         st.caption("Sauvegardez deux configurations pour les comparer côte à côte.")
         results = st.session_state.get(_results_key("current"))
-
+ 
         col_save_a, col_save_b = st.columns(2)
         with col_save_a:
             if st.button(
@@ -676,28 +686,28 @@ expliquée par l'appartenance au groupe.
             ):
                 st.session_state[_results_key("b")] = results
                 st.success("Config B sauvegardée.")
-
+ 
         res_a = st.session_state.get(_results_key("a"))
         res_b = st.session_state.get(_results_key("b"))
-
+ 
         if res_a is None or res_b is None:
             st.info("Sauvegardez deux configurations pour lancer la comparaison.")
             return
-
+ 
         comp = compare_configurations(
             routes_a=pd.Index(res_a["routes"]),
             labels_a=res_a["labels"],
             routes_b=pd.Index(res_b["routes"]),
             labels_b=res_b["labels"],
         )
-
+ 
         st.markdown("---")
         m1, m2, m3 = st.columns(3)
         ari_val = f"{comp['ari']:.3f}" if not np.isnan(comp["ari"]) else "—"
         m1.metric("ARI (accord A↔B)", ari_val)
         m2.metric("Liaisons communes", fmt_number(comp["n_common"]))
         m3.metric("Liaisons qui changent", fmt_number(comp["n_changed"]))
-
+ 
         col_a_col, col_b_col = st.columns(2)
         for col, res, label in [
             (col_a_col, res_a, "Config A"),
@@ -707,15 +717,15 @@ expliquée par l'appartenance au groupe.
                 params = res["params"]
                 st.markdown(f"**{label}**")
                 st.json(params, expanded=False)
-
+ 
         if comp["n_changed"] > 0 and comp["changed_routes"]:
             with st.expander(f"{comp['n_changed']} liaisons qui changent de profil"):
                 st.write(comp["changed_routes"])
-
+ 
     # ---------------------------------------------------------------------------
     # URL synchronisation helpers
     # ---------------------------------------------------------------------------
-
+ 
     def _sync_params_from_url(self) -> None:
         """Pre-populate session state from query parameters on first load."""
         qp = st.query_params
@@ -728,7 +738,7 @@ expliquée par l'appartenance au groupe.
         for qk, sk in key_map.items():
             if qk in qp and sk not in st.session_state:
                 st.session_state[sk] = qp[qk]
-
+ 
     def _sync_params_to_url(self, params: dict) -> None:
         """Write current configuration to query parameters for URL sharing."""
         st.query_params.update(
@@ -740,8 +750,8 @@ expliquée par l'appartenance au groupe.
                 "k": str(params["k"]),
             }
         )
-
-
+ 
+ 
 # Script entry point — executed by Streamlit when this file is a st.Page target.
 try:
     Q3LabPage(get_provider()).render()

@@ -2,13 +2,13 @@ from dataclasses import dataclass
 
 import pandas as pd
 
-from railinsight.analysis.q2_gares import (
+from railinsight.analysis.causes_retards import (
     add_delay_categories,
     add_delay_shares,
     aggregate_by_station,
     filter_scope,
 )
-from railinsight.backend.donnees import charger_donnees
+from railinsight.backend.dataloader import charger_donnees
 
 @dataclass(frozen=True, eq=False)
 class StationDelays:

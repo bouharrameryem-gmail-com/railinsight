@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-from railinsight.analysis.donnees import lire_donnees
+from railinsight.analysis.lecture_donnees import lire_donnees
 from railinsight.config import charger_config
 
 
