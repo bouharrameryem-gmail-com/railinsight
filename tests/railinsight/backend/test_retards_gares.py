@@ -1,11 +1,11 @@
 from railinsight.backend.retards_gares import (
-    compute_station_delays,
-    load_station_delays,
+    calculer_retards_par_gare,
+    charger_retards_par_gare,
 )
 
 
-def test_compute_station_delays_levels(raw):
-    res = compute_station_delays(raw)
+def test_calculer_retards_par_gare(raw):
+    res = calculer_retards_par_gare(raw)
 
     assert len(res.overall) == 2   # PARIS, LYON
     assert len(res.by_year) == 2   # PARIS 2024, LYON 2024
@@ -14,9 +14,9 @@ def test_compute_station_delays_levels(raw):
     assert paris["retard_non_heritees"] == 110
 
 
-def test_load_station_delays_uses_the_loader(monkeypatch, raw):
+def test_charger_retards_par_gare_uses_the_loader(monkeypatch, raw):
     monkeypatch.setattr(
         "railinsight.backend.retards_gares.charger_donnees", lambda: raw
     )
 
-    assert len(load_station_delays().overall) == 2
+    assert len(charger_retards_par_gare().overall) == 2

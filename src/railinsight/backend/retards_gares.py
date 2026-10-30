@@ -11,26 +11,17 @@ from railinsight.analysis.causes_retards import (
 from railinsight.backend.dataloader import charger_donnees
 
 @dataclass(frozen=True, eq=False)
-class StationDelays:
-    """Tables de retards par gare de départ, à trois niveaux de temps.
-
-    Chaque table contient les effectifs des trois catégories de causes et leurs
-    parts dans le total des trains en retard.
-
-    Attributes:
-        overall: Une ligne par gare, sur toute la période.
-        by_year: Une ligne par gare et par année.
-        by_month: Une ligne par gare et par mois.
-    """
+class RetardsParGare:
+    """Regroupe les retards par gare, à différentes échelles temporelles."""
 
     overall: pd.DataFrame
     by_year: pd.DataFrame
     by_month: pd.DataFrame
 
 
-def compute_station_delays(
+def calculer_retards_par_gare(
     raw: pd.DataFrame, exclude_2020: bool = True
-) -> StationDelays:
+) -> RetardsParGare:
     """Calcule les tables de retards par gare de départ.
 
     Args:
@@ -38,38 +29,21 @@ def compute_station_delays(
         exclude_2020: Si True, l'année 2020 est retirée avant tout calcul.
 
     Returns:
-        Un `StationDelays` contenant les tables aux trois niveaux de temps.
+        Un `RetardsParGare` contenant les tables aux trois niveaux de temps.
     """
     table = add_delay_categories(filter_scope(raw, exclude_2020=exclude_2020))
-    return StationDelays(
-        overall=_delays_at(table, None),
-        by_year=_delays_at(table, "annee"),
-        by_month=_delays_at(table, "date"),
+    return RetardsParGare(
+        overall=calculer_retards_par_periode(table, None),
+        by_year=calculer_retards_par_periode(table, "annee"),
+        by_month=calculer_retards_par_periode(table, "date"),
     )
 
 
-def load_station_delays(exclude_2020: bool = True) -> StationDelays:
-    """Charge les données SNCF puis calcule les tables de retards par gare.
-
-    Args:
-        exclude_2020: Si True, l'année 2020 est retirée avant tout calcul.
-
-    Returns:
-        Un `StationDelays` contenant les tables aux trois niveaux de temps.
-
-    Raises:
-        ConfigInvalide: la configuration est invalide.
-        FileNotFoundError: le CSV n'existe pas à l'emplacement configuré.
-        DonneesInvalides: le CSV est vide, illisible ou incomplet.
-    """
-    return compute_station_delays(charger_donnees(), exclude_2020)
+def charger_retards_par_gare(exclude_2020: bool = True) -> RetardsParGare:
+    """Charge les données SNCF et calcule les retards par gare."""
+    return calculer_retards_par_gare(charger_donnees(), exclude_2020)
 
 
-def _delays_at(table: pd.DataFrame, level: str | None) -> pd.DataFrame:
-    """Agrège par gare à un niveau de temps, puis ajoute les parts par catégorie.
-
-    Args:
-        table: Résultat de `add_delay_categories`.
-        level: None pour toute la période, ou `annee` / `date`.
-    """
-    return add_delay_shares(aggregate_by_station(table, level))
+def calculer_retards_par_periode(table: pd.DataFrame, niveau: str | None) -> pd.DataFrame:
+    """Agrège les retards par gare et calcule les parts par catégorie."""
+    return add_delay_shares(aggregate_by_station(table, niveau))

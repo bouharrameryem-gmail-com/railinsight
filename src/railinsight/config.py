@@ -18,7 +18,6 @@ from railinsight.utils.validation import (
     verifier_periode,
 )
 
-# The package lives at src/railinsight/, so three .parent calls reach the repo root.
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 DATA_DIR = PROJECT_ROOT / "data"
@@ -41,9 +40,6 @@ DEFAULT_EXCLUSION: str = "known"
 DEFAULT_ADJUST_DURATION: bool = False
 
 DEFAUT = PROJECT_ROOT / "config" / "defaut.yaml"
-
-
-# ---------- sections (one dataclass per YAML block) ----------
 
 
 @dataclass(frozen=True)
@@ -115,10 +111,6 @@ class Config:
     graine: int
     chemins: Chemins
     score_fiabilite: ScoreFiabilite
-    # >>> et un champ ici, avec le même nom que la section du YAML <<<
-
-
-# ---------- lecture, fusion, validation ----------
 
 
 def _lire(chemin: Path) -> dict:
@@ -189,16 +181,7 @@ def valider(brut: dict) -> Config:
 
 
 def charger_config(chemin=None, environ=None) -> Config:
-    """Charge defaut.yaml, le surcharge avec un fichier optionnel, puis valide.
-
-    Args:
-        chemin: YAML de surcharge, relatif à la PROJECT_ROOT du projet. Il ne contient
-            que les clés à modifier. Par défaut : variable RAILINSIGHT_CONFIG.
-        environ: variables d'environnement (os.environ par défaut ; utile en test).
-
-    Raises:
-        ConfigInvalide: fichier introuvable, clé inconnue ou valeur invalide.
-    """
+    """Charge la configuration par défaut et applique une surcharge optionnelle."""
     environ = os.environ if environ is None else environ
     chemin = chemin or environ.get("RAILINSIGHT_CONFIG")
 
