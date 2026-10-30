@@ -263,12 +263,12 @@ class FakeDataProvider:
             return features
 
         if adjust_duration:
-            features = _adjust_for_duration(features)
+            features = corriger_effet_duree(features)
 
         return features
 
 
-def _adjust_for_duration(features: pd.DataFrame) -> pd.DataFrame:
+def corriger_effet_duree(features: pd.DataFrame) -> pd.DataFrame:
     """Add _adj columns correcting each rate for trip duration (WIKI §5.3).
 
     The adjustment removes the linear trend of each indicator on log(duration),

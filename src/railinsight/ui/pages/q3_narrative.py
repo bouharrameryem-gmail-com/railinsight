@@ -18,13 +18,17 @@ import streamlit as st
 from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
 
-from railinsight.analysis.q3_clustering import (
-    FEATURE_SETS,
-    adjust_for_duration,
+from railinsight.analysis.clustering import (
+    GRAINE,
+    MIN_LIAISONS_CLUSTERING,
     auto_select_k,
-    build_q3_features,
-    fit_clustering,
-    scale_features,
+    entrainer_clustering,
+    mettre_a_echelle,
+)
+from railinsight.analysis.indicateurs_liaisons import (
+    FEATURE_SETS,
+    construire_indicateurs_liaison,
+    corriger_effet_duree,
 )
 from railinsight.exceptions import InsufficientDataError, RailInsightError
 from railinsight.interfaces.data_protocols import DataProvider
@@ -35,6 +39,7 @@ from railinsight.ui.components.kpi_card import kpi_row
 from railinsight.ui.components.method_box import method_box
 from railinsight.ui.components.pca_panel import pca_panel
 from railinsight.ui.components.route_card import route_card
+from railinsight.ui.donnees_regularite import charger_table_regularite
 from railinsight.ui.providers import get_provider
 from railinsight.ui.state.base_state import PageState
 from railinsight.ui.theme.tokens import CLUSTER_COLORS
@@ -53,25 +58,24 @@ _CANONICAL_SCALER = "power"
 
 
 @st.cache_data(show_spinner="Calcul des profils de ponctualité…")
-def _run_canonical_q3(monthly: pd.DataFrame, network: pd.DataFrame) -> dict:
-    """Run the fixed Q3 analysis (parameters from notebook v3).
+def _run_canonical_q3(table: pd.DataFrame) -> dict:
+    """Lance l'analyse Q3 fixe (paramètres du notebook v3).
 
-    Cached by DataFrame content — reruns only when the data changes.
+    Mise en cache selon le contenu du tableau : elle ne se relance que si les
+    données changent.
 
     Args:
-        monthly: Clean monthly DataFrame.
-        network: Monthly network DataFrame.
+        table: Résultat de `nettoyer_regularite`, filtré sur un service.
 
     Returns:
-        Dict with analysis results: features, labels, PCA, centroids, etc.
+        Un dict avec les résultats : indicateurs, étiquettes, ACP, centroïdes, etc.
     """
-    features = build_q3_features(
-        monthly,
-        network,
+    features = construire_indicateurs_liaison(
+        table,
         exclusion=_CANONICAL_EXCLUSION,
         min_months=_CANONICAL_MIN_MONTHS,
     )
-    features, _ = adjust_for_duration(features, FEATURE_SETS[_CANONICAL_FEATURE_SET])
+    features, _ = corriger_effet_duree(features, FEATURE_SETS[_CANONICAL_FEATURE_SET])
 
     # Use adjusted columns when available, otherwise original
     display_cols = FEATURE_SETS[_CANONICAL_FEATURE_SET]
@@ -80,15 +84,15 @@ def _run_canonical_q3(monthly: pd.DataFrame, network: pd.DataFrame) -> dict:
     ]
 
     x_df = features[input_cols].dropna()  # noqa: N806
-    if len(x_df) < 4:  # noqa: PLR2004
+    if len(x_df) < MIN_LIAISONS_CLUSTERING:
         raise InsufficientDataError("Pas assez de liaisons pour le clustering.")
 
-    x_scaled, scaler = scale_features(x_df, _CANONICAL_SCALER)  # noqa: N806
+    x_scaled, scaler = mettre_a_echelle(x_df, _CANONICAL_SCALER)  # noqa: N806
     k = auto_select_k(x_scaled, "kmeans")
-    labels = fit_clustering(x_scaled, "kmeans", k)
+    labels = entrainer_clustering(x_scaled, "kmeans", k)
     sil = float(silhouette_score(x_scaled, labels))
 
-    pca_model = PCA(n_components=2, random_state=42).fit(x_scaled)
+    pca_model = PCA(n_components=2, random_state=GRAINE).fit(x_scaled)
     x_pca = pca_model.transform(x_scaled)  # noqa: N806
 
     centroids_scaled = np.array([x_scaled[labels == c].mean(axis=0) for c in range(k)])
@@ -102,7 +106,14 @@ def _run_canonical_q3(monthly: pd.DataFrame, network: pd.DataFrame) -> dict:
         "late15_rate_adj" if "late15_rate_adj" in features.columns else "late15_rate"
     )
     if late15_col in features.columns:
-        cluster_means = features.assign(_lbl=labels).groupby("_lbl")[late15_col].mean()
+        # `labels` ne couvre que les liaisons sans valeur manquante (x_df après
+        # dropna) : on aligne `features` sur ces mêmes liaisons, dans le même ordre.
+        cluster_means = (
+            features.loc[x_df.index]
+            .assign(_lbl=labels)
+            .groupby("_lbl")[late15_col]
+            .mean()
+        )
         high_freq = int(cluster_means.idxmax())
     else:
         high_freq = 0
@@ -161,13 +172,15 @@ class Q3NarrativePage(BasePage):
     def author(self) -> str:
         return "Bachelard"
 
+    @staticmethod
+    def _resultats() -> dict:
+        """Résultats de l'analyse fixe (calculée une fois, mise en cache)."""
+        return _run_canonical_q3(charger_table_regularite())
+
     # --- Template method sections ---
 
     def _render_key_figures(self) -> None:
-        results = _run_canonical_q3(
-            self._provider.load_clean_monthly(),
-            self._provider.load_network_monthly(),
-        )
+        results = self._resultats()
         labels = results["labels"]
         sil = results["silhouette"]
         unique, counts = np.unique(labels, return_counts=True)
@@ -212,10 +225,7 @@ class Q3NarrativePage(BasePage):
             )
 
     def _render_body(self) -> None:
-        results = _run_canonical_q3(
-            self._provider.load_clean_monthly(),
-            self._provider.load_network_monthly(),
-        )
+        results = self._resultats()
         labels = results["labels"]
         cluster_names = results["cluster_names"]
         k = results["k"]
@@ -398,8 +408,10 @@ class Q3NarrativePage(BasePage):
                 else:
                     indicators[col.replace("_", " ")] = f"{val:.3f}"
 
-        if "trip_duration_min" in feat_row.index:
-            dur = int(feat_row["trip_duration_min"])
+        # La durée peut être manquante (NaN) : on ne l'affiche alors pas.
+        duree = feat_row.get("trip_duration_min", float("nan"))
+        if not np.isnan(duree):
+            dur = int(duree)
             indicators["Durée médiane"] = f"{dur // 60} h {dur % 60:02d}"
         if "n_months" in feat_row.index:
             indicators["Mois observés"] = str(int(feat_row["n_months"]))
@@ -422,7 +434,6 @@ corrélés à la durée du trajet sont ajustés par régression OLS en espace lo
 La mise à l'échelle utilise la transformation de Yeo-Johnson.
 Le nombre de profils *k* est sélectionné automatiquement par score silhouette
 (meilleur score parmi *k* = 2 à 8, avec au moins 3 liaisons par groupe).
-
 **Limites :**
 - Les deux profils forment un continuum, pas deux groupes nets (silhouette ≈ 0,26).
   K-means impose une frontière artificielle.

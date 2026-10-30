@@ -20,20 +20,28 @@ import streamlit as st
 from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
 
-from railinsight.analysis.q3_clustering import (
+from railinsight.analysis.clustering import (
+    GRAINE,
+    MIN_LIAISONS_CLUSTERING,
+    Algorithme,
+    auto_select_k,
+    entrainer_clustering,
+    mettre_a_echelle,
+)
+from railinsight.analysis.indicateurs_liaisons import (
     ALL_FEATURE_COLS,
     FEATURE_SETS,
-    adjust_for_duration,
-    auto_select_k,
-    build_q3_features,
+    Exclusion,
+    construire_indicateurs_liaison,
+    corriger_effet_duree,
+    detect_redundancy,
+)
+from railinsight.analysis.validation_clustering import (
     compare_configurations,
     compute_ari_bootstrap,
     compute_ari_seeds,
     compute_eta2,
-    detect_redundancy,
-    fit_clustering,
     permutation_test,
-    scale_features,
     silhouette_curve,
 )
 from railinsight.exceptions import InsufficientDataError, RailInsightError
@@ -49,6 +57,7 @@ from railinsight.ui.components.filters import (
 from railinsight.ui.components.kpi_card import kpi_row
 from railinsight.ui.components.method_box import method_box
 from railinsight.ui.components.pca_panel import pca_panel
+from railinsight.ui.donnees_regularite import charger_table_regularite
 from railinsight.ui.providers import get_provider
 from railinsight.ui.state.base_state import PageState
 from railinsight.ui.theme.tokens import CLUSTER_COLORS
@@ -79,33 +88,36 @@ _FEATURE_SET_LABELS: dict[str, str] = {
 
 
 def _run_lab_analysis(
-    monthly: pd.DataFrame,
-    network: pd.DataFrame,
+    table: pd.DataFrame,
     feature_set: str,
     custom_cols: list[str],
-    exclusion: Literal["none", "known", "data"],
+    exclusion: Exclusion,
     min_months: int,
     adjust_duration: bool,
     scaler_type: Literal["power", "standard"],
-    algorithm: Literal["kmeans", "ward", "gmm"],
+    algorithm: Algorithme,
     k_mode: str,
     k_manual: int,
     n_init: int,
     covariance_type: Literal["full", "tied", "diag", "spherical"],
 ) -> dict:
-    """Run the full Q3 analysis with the given parameters.
+    """Lance l'analyse Q3 complète avec les paramètres donnés.
 
-    Returns a dict with all results needed to render the lab outputs.
+    Args:
+        table: Résultat de `nettoyer_regularite`, filtré sur un service.
+
+    Returns:
+        Un dict avec tous les résultats nécessaires à l'affichage du laboratoire.
     """
-    features = build_q3_features(
-        monthly, network, exclusion=exclusion, min_months=min_months
+    features = construire_indicateurs_liaison(
+        table, exclusion=exclusion, min_months=min_months
     )
     base_cols: list[str] = (
         custom_cols if feature_set == "custom" else FEATURE_SETS[feature_set]
     )
 
     if adjust_duration:
-        features, _ = adjust_for_duration(features, base_cols)
+        features, _ = corriger_effet_duree(features, base_cols)
         input_cols = [
             f"{c}_adj" if f"{c}_adj" in features.columns else c for c in base_cols
         ]
@@ -115,17 +127,17 @@ def _run_lab_analysis(
     available_cols = [c for c in input_cols if c in features.columns]
     x_df = features[available_cols].dropna()  # noqa: N806
 
-    if len(x_df) < 4:  # noqa: PLR2004
+    if len(x_df) < MIN_LIAISONS_CLUSTERING:
         raise InsufficientDataError("Pas assez de liaisons après filtrage.")
 
-    x_scaled, scaler = scale_features(x_df, scaler_type)  # noqa: N806
+    x_scaled, scaler = mettre_a_echelle(x_df, scaler_type)  # noqa: N806
 
     if k_mode == "auto":
         k = auto_select_k(x_scaled, algorithm)
     else:
         k = k_manual
 
-    labels = fit_clustering(
+    labels = entrainer_clustering(
         x_scaled,
         algorithm,
         k,
@@ -134,7 +146,7 @@ def _run_lab_analysis(
     )
     sil = float(silhouette_score(x_scaled, labels))
 
-    pca_model = PCA(n_components=2, random_state=42).fit(x_scaled)
+    pca_model = PCA(n_components=2, random_state=GRAINE).fit(x_scaled)
     x_pca = pca_model.transform(x_scaled)  # noqa: N806
 
     centroids_scaled = np.array([x_scaled[labels == c].mean(axis=0) for c in range(k)])
@@ -243,8 +255,7 @@ class Q3LabPage(BasePage):
         """Render parameter form and trigger analysis on submission."""
         self._sync_params_from_url()
 
-        monthly = self._provider.load_clean_monthly()
-        network = self._provider.load_network_monthly()
+        table = charger_table_regularite()
 
         with st.form(key="q3_lab_params"):
             st.markdown("##### Données")
@@ -352,8 +363,7 @@ class Q3LabPage(BasePage):
             with st.spinner("Calcul en cours…"):
                 try:
                     results = _run_lab_analysis(
-                        monthly=monthly,
-                        network=network,
+                        table=table,
                         feature_set=fs_choice,
                         custom_cols=custom_cols,
                         exclusion=exclusion,
@@ -415,7 +425,6 @@ Ajustement durée : `{"oui" if params["adjust_duration"] else "non"}` ·
 Mise à l'échelle : `{params["scaler"]}` ·
 Algorithme : `{params["algorithm"]}` ·
 k : `{params["k"]}`.
-
 **Silhouette :** mesure la cohésion des groupes (−1 à 1).
 **Davies-Bouldin :** mesure la séparation des groupes (plus bas = mieux).
 **ARI :** Adjusted Rand Index, robustesse entre deux solutions
@@ -549,7 +558,9 @@ expliquée par l'appartenance au groupe.
 
     def _render_eta2_section(self, results: dict) -> None:
         st.markdown("#### Pouvoir discriminant des indicateurs (η²)")
-        features = results["features"]
+        # `labels` ne couvre que les liaisons sans valeur manquante (x_df après
+        # dropna) : on aligne `features` sur ces mêmes liaisons, dans le même ordre.
+        features = results["features"].loc[results["routes"]]
         labels = results["labels"]
         # Evaluate on all available Q3 columns
         eval_cols = [c for c in ALL_FEATURE_COLS if c in features.columns]
