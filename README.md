@@ -122,6 +122,48 @@ uv run jupyter lab
 Notebooks live in `notebooks/`. They read raw data from `data/raw/` via relative paths
 and do not import the `railinsight` package.
 
+### Q4 : score de fiabilité
+
+La page affiche le schéma du réseau du notebook `notebooks/Q4_score_fiabilite.ipynb`.
+Une seule page avec trois onglets : réseau complet, classements et match de
+deux liaisons. Le dessin n'est pas une carte géographique.
+
+La période et la priorité du voyageur actualisent toutes les notes. Par défaut,
+annulations et retards comptent autant ; choisir une priorité donne un poids de
+75 % à ce critère et de 25 % à l'autre. Le backend existant est inchangé.
+
+Dans « Le réseau », survoler le milieu d'un trait affiche les indicateurs ;
+le filtre « Quelles liaisons afficher ? » permet de choisir une ou plusieurs
+couleurs/catégories. Il ne change ni les notes, ni les positions des gares,
+ni les classements et le match. Une sélection vide ou sans liaison affiche
+un message explicite. Cliquer sur la légende masque aussi une catégorie.
+Le volet « Code source simplifié » montre un exemple du dessin du réseau,
+sans les détails au survol, à partir des données et notes déjà préparées.
+« Le classement » présente les
+meilleures et les moins bonnes notes. « Le match des trajets » permet de comparer
+les indicateurs de deux liaisons avant de révéler leurs notes.
+
+| Fichier | Rôle |
+|---|---|
+| `src/railinsight/analysis/score_fiabilite.py` | Nettoyage et calcul de la note |
+| `src/railinsight/analysis/graphe_reseau.py` | Position reproductible des gares |
+| `src/railinsight/backend/fiabilite.py` | Chargement de tous les services et analyse par période |
+| `src/railinsight/viz/fiabilite.py` | Graphique Plotly et couleurs |
+| `src/railinsight/ui/pages/q4_score_fiabilite.py` | Textes, filtres et affichage Streamlit |
+| `app.py` | Inscription dans la navigation |
+
+La note reprend par défaut les réglages du notebook : poids égaux, plafond de 6 %
+d'annulations, plafond de 12 minutes de retard et minimum de 100 trains par liaison.
+Le retard agrégé est pondéré par le nombre de trains dont le retard est connu.
+
+Différences de nettoyage : les annulations invalides et les lignes sans mois ou
+gare sont écartées ; un retard inférieur à -15 minutes devient manquant.
+Une liaison sans retard mesuré n'est pas notée. Les anomalies de nettoyage
+sont journalisées.
+
+Pour adapter la présentation, modifier la page ; pour adapter les seuils, modifier
+`ParametresScore` et mettre à jour le texte « Méthode et limites ».
+
 ---
 
 ## Deployment

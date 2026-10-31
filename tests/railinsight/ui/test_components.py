@@ -2,9 +2,12 @@
 
 from pathlib import Path
 
+import plotly.graph_objects as go
+import pytest
 from streamlit.testing.v1 import AppTest
 
 from railinsight.adapters.fake_data_provider import FakeDataProvider
+from railinsight.ui.components.chart_container import chart_container
 
 _PAGES_DIR = Path(__file__).parents[3] / "src" / "railinsight" / "ui" / "pages"
 
@@ -73,6 +76,22 @@ insight_box("Result.", title="Résultat principal")
 
 
 class TestChartContainer:
+    @pytest.mark.parametrize("etirer,largeur", [(True, "stretch"), (False, "content")])
+    def test_largeur_et_cle_transmises(self, monkeypatch, etirer, largeur):
+        appels = []
+        monkeypatch.setattr(
+            "railinsight.ui.components.chart_container.st.markdown",
+            lambda texte: None,
+        )
+        monkeypatch.setattr(
+            "railinsight.ui.components.chart_container.st.plotly_chart",
+            lambda figure, **options: appels.append(options),
+        )
+        chart_container(
+            go.Figure(), "Test", use_container_width=etirer, key="graphique_test"
+        )
+        assert appels == [{"width": largeur, "key": "graphique_test"}]
+
     def test_renders_without_optional_args(self):
         at = AppTest.from_string("""
 import plotly.graph_objects as go
