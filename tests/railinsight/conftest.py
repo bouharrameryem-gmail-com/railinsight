@@ -3,6 +3,30 @@ import pytest
 
 
 @pytest.fixture
+def donnees_fiabilite():
+    """Petit réseau avec deux mois, les deux sens et deux services."""
+    return pd.DataFrame(
+        [
+            ("2024-01", "National", "Paris", "Lyon", 100, 0, 2.0),
+            ("2024-01", "National", "Lyon", "Paris", 300, 12, 6.0),
+            ("2024-02", "National", "Paris", "Lyon", 1000, 0, 1.0),
+            ("2024-01", "International", "Paris", "Bruxelles", 200, 0, 0.0),
+            ("2024-01", "National", "Lyon", "Bruxelles", 10, 0, 1.0),
+            ("2024-01", "National", "Lyon", "Lille", 200, 0, float("nan")),
+        ],
+        columns=[
+            "date",
+            "service",
+            "gare_depart",
+            "gare_arrivee",
+            "prevus",
+            "annules",
+            "retard_moyen_arrivee",
+        ],
+    )
+
+
+@pytest.fixture
 def raw():
     cols = [
         "prct_cause_infrastructure",

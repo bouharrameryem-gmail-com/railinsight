@@ -48,6 +48,30 @@ GoodPage(FakeDataProvider()).render()
 
 
 class TestBasePageErrorHandling:
+    def test_french_domain_error_shows_warning(self):
+        at = AppTest.from_string("""
+import streamlit as st
+from railinsight.adapters.fake_data_provider import FakeDataProvider
+from railinsight.ui.base_page import BasePage
+from railinsight.exceptions import DonneesInvalides
+
+class ErrorPage(BasePage):
+    @property
+    def question_number(self): return 4
+    @property
+    def question_title(self): return "Fiabilité"
+    @property
+    def author(self): return "Test"
+    def _render_key_figures(self): raise DonneesInvalides("Aucune donnée.")
+    def _render_body(self): pass
+
+ErrorPage(FakeDataProvider()).render()
+""")
+        at.run()
+        assert not at.exception
+        assert not at.error
+        assert at.warning[0].value == "Aucune donnée."
+
     def test_domain_error_shows_warning_not_exception(self):
         at = AppTest.from_string("""
 import streamlit as st
