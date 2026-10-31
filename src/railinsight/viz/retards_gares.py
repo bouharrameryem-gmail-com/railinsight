@@ -1,7 +1,7 @@
 import pandas as pd
 import plotly.graph_objects as go
 
-from railinsight.utils.formatting import fmt_number
+from railinsight.utils.formatting import fmt_number, fmt_pct
 
 """Figures de la Q2 : gares de départ à l'origine ou victimes des retards.
 
@@ -30,15 +30,20 @@ PARTS_CATEGORIES = {
 
 
 def figure_classement_gares(
-    classement: pd.DataFrame, colonne: str, couleur: str
+    classement: pd.DataFrame,
+    colonne: str,
+    couleur: str,
+    en_part: bool = False,
 ) -> go.Figure:
     """Affiche un classement de gares en barres horizontales.
 
     Args:
         classement: Gares déjà classées, de la plus grande valeur à la plus petite.
             Colonnes attendues : `gare_depart` et `colonne`.
-        colonne: Colonne de volume à afficher.
+        colonne: Colonne à afficher.
         couleur: Couleur des barres.
+        en_part: Si True, `colonne` est une part (entre 0 et 1) affichée en
+            pourcentage ; sinon c'est un nombre de trains.
 
     Returns:
         Une figure avec la première gare en haut.
@@ -47,13 +52,14 @@ def figure_classement_gares(
     choix = classement.iloc[::-1]
     valeurs = choix[colonne]
     maximum = float(valeurs.max()) if not choix.empty else 0.0
+    formater = fmt_pct if en_part else fmt_number
     figure = go.Figure(
         go.Bar(
             x=valeurs,
             y=choix["gare_depart"],
             orientation="h",
             marker_color=couleur,
-            text=[fmt_number(valeur) for valeur in valeurs],
+            text=[formater(valeur) for valeur in valeurs],
             textposition="outside",
             cliponaxis=False,
             hovertemplate="%{y}<br>%{text}<extra></extra>",
@@ -64,7 +70,12 @@ def figure_classement_gares(
         showlegend=False,
         margin={"l": 0, "r": 40, "t": 10, "b": 0},
         xaxis={
-            "title": "Retards estimés à l'arrivée (nombre de trains)",
+            "title": (
+                "Part dans les retards de la gare"
+                if en_part
+                else "Retards estimés à l'arrivée (nombre de trains)"
+            ),
+            "tickformat": ".0%" if en_part else None,
             # Marge à droite pour que le chiffre ne soit pas coupé.
             "range": [0, (maximum or 1) * 1.15],
         },
