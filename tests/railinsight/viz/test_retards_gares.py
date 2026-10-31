@@ -1,8 +1,9 @@
 """Tests des figures de la Q2."""
 
-from railinsight.analysis.causes_retards import DELAY_COLUMNS
-from railinsight.viz import retards_gares, figure_classement_gares
 import pandas as pd
+
+from railinsight.analysis.causes_retards import DELAY_COLUMNS
+from railinsight.viz import retards_gares
 
 
 def test_constantes_couvrent_toutes_les_categories():
@@ -21,7 +22,9 @@ def test_classement_ordre_et_valeurs():
         }
     )
 
-    figure = figure_classement_gares(classement, "retard_non_heritees", "#FF6B35")
+    figure = retards_gares.figure_classement_gares(
+        classement, "retard_non_heritees", "#FF6B35"
+    )
 
     assert len(figure.data) == 1
     # La première gare du classement est dessinée en haut, donc en dernier.
