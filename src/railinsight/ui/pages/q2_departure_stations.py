@@ -7,10 +7,12 @@ from railinsight.interfaces.data_protocols import DataProvider
 from railinsight.ui.base_page import BasePage
 from railinsight.ui.providers import get_provider
 from railinsight.ui.state.base_state import PageState
-from railinsight.analysis.causes_retards import DELAY_COLUMNS
+from railinsight.analysis.causes_retards import  DELAY_COLUMNS
 from railinsight.utils.formatting import fmt_number, fmt_pct
 
 EXCLURE_2020_PAR_DEFAUT = True
+NOMBRE_PAR_DEFAUT = 10
+SEUIL_PAR_DEFAUT = 1000
 
 
 @st.cache_data(show_spinner="Calcul des retards par gare…")
@@ -69,6 +71,33 @@ class Q2RetardsGaresPage(BasePage):
             "Hérités",
             _formater_part(totaux["retard_heritees"], total),
             help="Gestion en gare, réutilisation du matériel et voyageurs.",
+        )
+
+    def _render_controls(self) -> None:
+        exclure, nombre, seuil = st.columns(3)
+        exclure.toggle(
+            "Exclure 2020",
+            value=EXCLURE_2020_PAR_DEFAUT,
+            key=self._state.widget_key("exclure_2020"),
+            help="Les confinements ont réduit le trafic et faussent les volumes.",
+        )
+        nombre.select_slider(
+            "Gares par classement",
+            options=[5, 10, 15],
+            value=NOMBRE_PAR_DEFAUT,
+            key=self._state.widget_key("nombre_gares"),
+        )
+        seuil.slider(
+            "Retards minimum par gare",
+            min_value=0,
+            max_value=10000,
+            value=SEUIL_PAR_DEFAUT,
+            step=100,
+            key=self._state.widget_key("seuil_retards"),
+            help=(
+                "Pour les classements en parts : écarte les gares qui ont très "
+                "peu de retards, dont la part n'est pas significative."
+            ),
         )
 
     def _render_body(self) -> None:
