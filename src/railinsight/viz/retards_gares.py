@@ -28,6 +28,8 @@ PARTS_CATEGORIES = {
     "retard_externes": "taux_externes",
 }
 
+SEUIL_ETIQUETTE = 0.08
+
 
 def figure_classement_gares(
     classement: pd.DataFrame,
@@ -79,6 +81,46 @@ def figure_classement_gares(
             # Marge à droite pour que le chiffre ne soit pas coupé.
             "range": [0, (maximum or 1) * 1.15],
         },
+        yaxis={"title": ""},
+    )
+    return figure
+
+
+def figure_repartition_causes(parts: pd.DataFrame) -> go.Figure:
+    """Affiche, pour chaque gare, la répartition de ses retards par catégorie.
+
+    Args:
+        parts: Gares dans l'ordre d'affichage (première gare en haut).
+            Colonnes attendues : `gare_depart` et les colonnes de
+            PARTS_CATEGORIES.
+
+    Returns:
+        Une figure en barres empilées, chaque barre totalisant 100 %.
+    """
+    choix = parts.iloc[::-1]
+    figure = go.Figure()
+    for volume, colonne in PARTS_CATEGORIES.items():
+        libelle = LIBELLES_CATEGORIES[volume]
+        valeurs = choix[colonne].fillna(0)
+        figure.add_trace(
+            go.Bar(
+                x=valeurs,
+                y=choix["gare_depart"],
+                orientation="h",
+                name=libelle,
+                marker_color=COULEURS_CATEGORIES[volume],
+                text=[fmt_pct(v) if v >= SEUIL_ETIQUETTE else "" for v in valeurs],
+                textposition="inside",
+                textfont={"color": "white"},
+                hovertemplate=f"%{{y}}<br>{libelle} : %{{x:.1%}}<extra></extra>",
+            )
+        )
+    figure.update_layout(
+        barmode="stack",
+        height=35 * len(choix) + 160,
+        margin={"l": 0, "r": 0, "t": 40, "b": 0},
+        legend={"orientation": "h", "y": 1.02},
+        xaxis={"title": "Part des retards de la gare", "tickformat": ".0%"},
         yaxis={"title": ""},
     )
     return figure
