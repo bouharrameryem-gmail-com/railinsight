@@ -88,3 +88,28 @@ def filtrer_gares_significatives(table: pd.DataFrame, minimum: int) -> pd.DataFr
         raise ValueError(f"minimum doit être positif ou nul, reçu : {minimum!r}")
     total = table[DELAY_COLUMNS].sum(axis=1)
     return table[total >= minimum].reset_index(drop=True)
+
+
+def croiser_classements(
+    table: pd.DataFrame, colonne_a: str, colonne_b: str, n: int = 15
+) -> pd.DataFrame:
+    """Repère les gares présentes dans les n premières de deux classements.
+
+    Args:
+        table: Une ligne par gare, avec `gare_depart`, `colonne_a` et `colonne_b`.
+        colonne_a: Colonne du premier classement (valeur la plus haute en tête).
+        colonne_b: Colonne du second classement.
+        n: Taille du haut de classement considéré.
+
+    Returns:
+        Les gares présentes dans les deux hauts de classement, avec leurs deux
+        valeurs et leurs deux rangs (`rang_<colonne>`), triées selon le premier
+        rang. Les valeurs manquantes ne sont jamais classées.
+    """
+    rang_a = table[colonne_a].rank(ascending=False, method="first")
+    rang_b = table[colonne_b].rank(ascending=False, method="first")
+    dans_les_deux = (rang_a <= n) & (rang_b <= n)
+    resultat = table.loc[dans_les_deux, ["gare_depart", colonne_a, colonne_b]].assign(
+        **{f"rang_{colonne_a}": rang_a, f"rang_{colonne_b}": rang_b}
+    )
+    return resultat.sort_values(f"rang_{colonne_a}").reset_index(drop=True)
