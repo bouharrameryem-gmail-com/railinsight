@@ -54,7 +54,37 @@ def test_classement_en_part():
 def test_classement_vide_ne_plante_pas():
     classement = pd.DataFrame({"gare_depart": [], "retard_non_heritees": []})
 
-    figure = retards_gares.figure_classement_gares(classement, "retard_non_heritees", "#FF6B35")
+    figure = retards_gares.figure_classement_gares(
+        classement, "retard_non_heritees", "#FF6B35"
+    )
 
     assert len(figure.data[0].x) == 0
     assert figure.layout.xaxis.range[1] == pytest.approx(1.15)
+
+
+@pytest.fixture
+def evolution():
+    return pd.DataFrame(
+        {
+            "annee": [2022, 2019, 2021],
+            "retard_heritees": [30.0, 10.0, 20.0],
+            "retard_non_heritees": [300.0, 100.0, 200.0],
+            "retard_externes": [3.0, 1.0, 2.0],
+        }
+    )
+
+
+def test_evolution_triee_dans_le_temps(evolution):
+    figure = retards_gares.figure_evolution_gare(evolution, "annee")
+
+    assert len(figure.data) == 3
+    assert list(figure.data[0].x) == [2019, 2021, 2022]
+    assert list(figure.data[1].y) == [100.0, 200.0, 300.0]
+    assert figure.data[1].name == "Retards propres à la gare"
+
+
+def test_evolution_annuelle_graduation_entiere(evolution):
+    figure = retards_gares.figure_evolution_gare(evolution, "annee")
+
+    assert figure.layout.xaxis.dtick == 1
+    assert figure.layout.xaxis.tickformat == "d"
