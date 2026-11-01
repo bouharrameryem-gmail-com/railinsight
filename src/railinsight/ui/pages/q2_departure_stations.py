@@ -2,12 +2,22 @@
 
 import streamlit as st
 
+from railinsight.analysis.causes_retards import (
+    DELAY_COLUMNS,
+    filtrer_gares_significatives,
+    rank_stations,
+)
+from railinsight.ui.components.chart_container import chart_container
+from railinsight.viz.retards_gares import (
+    COULEURS_CATEGORIES,
+    PARTS_CATEGORIES,
+    figure_classement_gares,
+)
 from railinsight.backend.retards_gares import RetardsParGare, charger_retards_par_gare
 from railinsight.interfaces.data_protocols import DataProvider
 from railinsight.ui.base_page import BasePage
 from railinsight.ui.providers import get_provider
 from railinsight.ui.state.base_state import PageState
-from railinsight.analysis.causes_retards import  DELAY_COLUMNS
 from railinsight.utils.formatting import fmt_number, fmt_pct
 
 EXCLURE_2020_PAR_DEFAUT = True
@@ -19,6 +29,8 @@ SEUIL_PAR_DEFAUT = 1000
 def _retards(exclure_2020: bool) -> RetardsParGare:
     """Met en cache les tables de retards selon l'exclusion de 2020."""
     return charger_retards_par_gare(exclure_2020)
+
+
 def _formater_part(valeur: float, total: float) -> str:
     """Affiche une part en pourcentage, ou un tiret si le total est nul."""
     return fmt_pct(valeur / total) if total > 0 else "—"
@@ -101,7 +113,62 @@ class Q2RetardsGaresPage(BasePage):
         )
 
     def _render_body(self) -> None:
-        st.info("Les classements arrivent dans les prochains commits.")
+        retards = self._charger()
+        classements, causes, evolution = st.tabs(
+            ["Classements", "Causes et croisement", "Évolution"]
+        )
+        with classements:
+            self._afficher_classements(retards)
+        with causes:
+            st.info("Onglet à venir.")
+        with evolution:
+            st.info("Onglet à venir.")
+
+    def _afficher_classements(self, retards: RetardsParGare) -> None:
+        """Classe les gares par retards propres et par retards hérités."""
+        mode = st.radio(
+            "Afficher",
+            options=["Volumes", "Parts"],
+            horizontal=True,
+            key=self._state.widget_key("mode_classement"),
+            help=(
+                "Volumes : nombre de trains en retard. Parts : proportion des "
+                "retards de la gare, parmi les gares au-dessus du seuil minimal."
+            ),
+        )
+        en_part = mode == "Parts"
+        table = retards.overall
+        if en_part:
+            seuil = self._state.get("seuil_retards", SEUIL_PAR_DEFAUT)
+            table = filtrer_gares_significatives(table, seuil)
+            st.caption(
+                f"Seules les gares avec au moins {fmt_number(seuil)} retards "
+                "sont classées."
+            )
+        if table.empty:
+            st.info("Aucune gare n'atteint ce seuil. Baissez le seuil minimal.")
+            return
+
+        nombre = self._state.get("nombre_gares", NOMBRE_PAR_DEFAUT)
+        gauche, droite = st.columns(2)
+        for zone, volume, titre in (
+            (gauche, "retard_non_heritees", "Gares à l'origine de leurs retards"),
+            (droite, "retard_heritees", "Gares qui subissent des retards"),
+        ):
+            colonne = PARTS_CATEGORIES[volume] if en_part else volume
+            classement = rank_stations(table, colonne, nombre)
+            with zone:
+                chart_container(
+                    figure_classement_gares(
+                        classement, colonne, COULEURS_CATEGORIES[volume], en_part
+                    ),
+                    title=titre,
+                    key=self._state.widget_key(f"classement_{colonne}"),
+                )
+        st.caption(
+            "Retards propres : infrastructure, trafic, matériel roulant. "
+            "Retards hérités : gestion en gare, réutilisation du matériel, voyageurs."
+        )
 
 
 Q2RetardsGaresPage(get_provider()).render()
