@@ -8,6 +8,14 @@ from railinsight.analysis.causes_retards import (
     filtrer_gares_significatives,
     rank_stations,
 )
+from railinsight.backend.retards_gares import RetardsParGare, charger_retards_par_gare
+from railinsight.interfaces.data_protocols import DataProvider
+from railinsight.ui.base_page import BasePage
+from railinsight.ui.components.chart_container import chart_container
+from railinsight.ui.components.method_box import method_box
+from railinsight.ui.providers import get_provider
+from railinsight.ui.state.base_state import PageState
+from railinsight.utils.formatting import fmt_number, fmt_pct
 from railinsight.viz.retards_gares import (
     COULEURS_CATEGORIES,
     LIBELLES_CATEGORIES,
@@ -16,13 +24,6 @@ from railinsight.viz.retards_gares import (
     figure_evolution_gare,
     figure_repartition_causes,
 )
-from railinsight.ui.components.chart_container import chart_container
-from railinsight.backend.retards_gares import RetardsParGare, charger_retards_par_gare
-from railinsight.interfaces.data_protocols import DataProvider
-from railinsight.ui.base_page import BasePage
-from railinsight.ui.providers import get_provider
-from railinsight.ui.state.base_state import PageState
-from railinsight.utils.formatting import fmt_number, fmt_pct
 
 EXCLURE_2020_PAR_DEFAUT = True
 NOMBRE_PAR_DEFAUT = 10
@@ -173,7 +174,7 @@ class Q2RetardsGaresPage(BasePage):
             "Retards propres : infrastructure, trafic, matériel roulant. "
             "Retards hérités : gestion en gare, réutilisation du matériel, voyageurs."
         )
-        
+
     def _afficher_causes(self, retards: RetardsParGare) -> None:
         """Répartit les retards des principales gares et croise les classements."""
         nombre = self._state.get("nombre_gares", NOMBRE_PAR_DEFAUT)
@@ -218,7 +219,6 @@ class Q2RetardsGaresPage(BasePage):
         ].astype(int)
         st.dataframe(affichage, hide_index=True, width="stretch")
 
-
     def _afficher_evolution(self, retards: RetardsParGare) -> None:
         """Suit les retards d'une gare dans le temps."""
         overall = retards.overall
@@ -250,6 +250,28 @@ class Q2RetardsGaresPage(BasePage):
                 "Une année ou un mois sans retard n'apparaît pas."
             ),
             key=self._state.widget_key("evolution_gare"),
+        )
+
+    def _render_method_box(self) -> None:
+        method_box(
+            "**Méthode.** Pour chaque liaison et chaque mois, le nombre de trains "
+            "arrivés en retard est réparti selon les pourcentages de causes "
+            "publiés par la SNCF. Les causes sont regroupées en trois catégories : "
+            "retards propres à la gare (infrastructure, gestion du trafic, "
+            "matériel roulant), retards hérités (gestion en gare, réutilisation "
+            "du matériel, voyageurs) et causes externes. Les retards sont ensuite "
+            "additionnés par gare de départ.\n\n"
+            "**Limites.**\n"
+            "- Les nombres de retards par cause sont des estimations : la SNCF "
+            "publie des pourcentages, pas des comptes.\n"
+            "- Un retard à l'arrivée est attribué à la gare de départ de la "
+            "liaison. C'est une hypothèse de lecture, pas une mesure.\n"
+            "- Les classements en volume favorisent les grandes gares. Le mode "
+            "« Parts » et son seuil minimal servent à nuancer ce biais.\n"
+            "- Seul le service national est étudié. Les lignes sans aucune cause "
+            "renseignée sont écartées.\n"
+            "- Les causes externes ne sont ni propres ni héritées : elles sont "
+            "affichées à part."
         )
 
 
