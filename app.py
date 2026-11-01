@@ -51,11 +51,11 @@ pages = [
     #     icon=":material/trending_down:",
     # ),
     # Q2 — Éric
-    # st.Page(
-    #     "src/railinsight/ui/pages/q2_departure_stations.py",
-    #     title="Q2 — Gares responsables",
-    #     icon=":material/alt_route:",
-    # ),
+    st.Page(
+        "src/railinsight/ui/pages/q2_departure_stations.py",
+        title="Q2 — Gares responsables",
+        icon=":material/alt_route:",
+    ),
     # Q3 — Bachelard
     st.Page(
         "src/railinsight/ui/pages/q3_narrative.py",
