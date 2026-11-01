@@ -13,6 +13,7 @@ from railinsight.viz.retards_gares import (
     LIBELLES_CATEGORIES,
     PARTS_CATEGORIES,
     figure_classement_gares,
+    figure_evolution_gare,
     figure_repartition_causes,
 )
 from railinsight.ui.components.chart_container import chart_container
@@ -125,7 +126,7 @@ class Q2RetardsGaresPage(BasePage):
         with causes:
             self._afficher_causes(retards)
         with evolution:
-            st.info("Onglet à venir.")
+            self._afficher_evolution(retards)
 
     def _afficher_classements(self, retards: RetardsParGare) -> None:
         """Classe les gares par retards propres et par retards hérités."""
@@ -216,6 +217,40 @@ class Q2RetardsGaresPage(BasePage):
             ["Rang (propres)", "Rang (hérités)"]
         ].astype(int)
         st.dataframe(affichage, hide_index=True, width="stretch")
+
+
+    def _afficher_evolution(self, retards: RetardsParGare) -> None:
+        """Suit les retards d'une gare dans le temps."""
+        overall = retards.overall
+        gares = sorted(overall["gare_depart"])
+        total = overall[DELAY_COLUMNS].sum(axis=1)
+        plus_touchee = overall.loc[total.idxmax(), "gare_depart"]
+
+        gauche, droite = st.columns(2)
+        gare = gauche.selectbox(
+            "Gare de départ",
+            options=gares,
+            index=gares.index(plus_touchee),
+            key=self._state.widget_key("gare_evolution"),
+        )
+        niveau = droite.radio(
+            "Période",
+            options=["Par année", "Par mois"],
+            horizontal=True,
+            key=self._state.widget_key("niveau_evolution"),
+        )
+        par_annee = niveau == "Par année"
+        table = retards.by_year if par_annee else retards.by_month
+        axe = "annee" if par_annee else "date"
+        chart_container(
+            figure_evolution_gare(table[table["gare_depart"] == gare], axe),
+            title=f"Retards estimés au départ de {gare}",
+            how_to_read=(
+                "Chaque courbe suit une catégorie de retards au fil du temps. "
+                "Une année ou un mois sans retard n'apparaît pas."
+            ),
+            key=self._state.widget_key("evolution_gare"),
+        )
 
 
 Q2RetardsGaresPage(get_provider()).render()
