@@ -124,3 +124,41 @@ def figure_repartition_causes(parts: pd.DataFrame) -> go.Figure:
         yaxis={"title": ""},
     )
     return figure
+
+
+def figure_evolution_gare(table: pd.DataFrame, axe_temps: str = "date") -> go.Figure:
+    """Affiche l'évolution des retards d'une gare, une courbe par catégorie.
+
+    Args:
+        table: Lignes d'une seule gare, issues du niveau `by_year` ou `by_month`.
+            Colonnes attendues : `axe_temps` et les colonnes de volume de
+            LIBELLES_CATEGORIES.
+        axe_temps: `annee` ou `date`.
+
+    Returns:
+        Une figure avec une courbe par catégorie, triée dans le temps.
+    """
+    table = table.sort_values(axe_temps)
+    figure = go.Figure()
+    for colonne, libelle in LIBELLES_CATEGORIES.items():
+        figure.add_trace(
+            go.Scatter(
+                x=table[axe_temps],
+                y=table[colonne],
+                mode="lines+markers",
+                name=libelle,
+                line={"color": COULEURS_CATEGORIES[colonne]},
+                hovertemplate=f"{libelle}<br>%{{y:.0f}} trains<extra></extra>",
+            )
+        )
+    figure.update_layout(
+        height=420,
+        margin={"l": 0, "r": 0, "t": 40, "b": 0},
+        legend={"orientation": "h", "y": 1.1},
+        xaxis={"title": ""},
+        yaxis={"title": "Retards estimés à l'arrivée (nombre de trains)"},
+    )
+    if axe_temps == "annee":
+        # Une graduation par année, sans décimale (2019, pas 2019,5).
+        figure.update_xaxes(dtick=1, tickformat="d")
+    return figure
