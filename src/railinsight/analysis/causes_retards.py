@@ -68,3 +68,23 @@ def ajouter_parts_retard(table: pd.DataFrame) -> pd.DataFrame:
 def rank_stations(table: pd.DataFrame, column: str, n: int = 15) -> pd.DataFrame:
     """Renvoie les n gares ayant les valeurs les plus élevées dans une colonne."""
     return table.nlargest(n, column)
+
+def filtrer_gares_significatives(table: pd.DataFrame, minimum: int) -> pd.DataFrame:
+    """Garde les lignes dont le total de retards atteint un minimum.
+
+    Évite qu'une gare avec très peu de retards domine un classement en parts.
+
+    Args:
+        table: Résultat de `agreger_par_gare`, avec les colonnes de DELAY_COLUMNS.
+        minimum: Nombre minimal de retards (toutes catégories confondues).
+
+    Returns:
+        Une copie des lignes retenues, index remis à zéro.
+
+    Raises:
+        ValueError: Si `minimum` est négatif.
+    """
+    if minimum < 0:
+        raise ValueError(f"minimum doit être positif ou nul, reçu : {minimum!r}")
+    total = table[DELAY_COLUMNS].sum(axis=1)
+    return table[total >= minimum].reset_index(drop=True)
