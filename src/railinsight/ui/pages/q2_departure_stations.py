@@ -4,15 +4,18 @@ import streamlit as st
 
 from railinsight.analysis.causes_retards import (
     DELAY_COLUMNS,
+    croiser_classements,
     filtrer_gares_significatives,
     rank_stations,
 )
-from railinsight.ui.components.chart_container import chart_container
 from railinsight.viz.retards_gares import (
     COULEURS_CATEGORIES,
+    LIBELLES_CATEGORIES,
     PARTS_CATEGORIES,
     figure_classement_gares,
+    figure_repartition_causes,
 )
+from railinsight.ui.components.chart_container import chart_container
 from railinsight.backend.retards_gares import RetardsParGare, charger_retards_par_gare
 from railinsight.interfaces.data_protocols import DataProvider
 from railinsight.ui.base_page import BasePage
@@ -120,7 +123,7 @@ class Q2RetardsGaresPage(BasePage):
         with classements:
             self._afficher_classements(retards)
         with causes:
-            st.info("Onglet à venir.")
+            self._afficher_causes(retards)
         with evolution:
             st.info("Onglet à venir.")
 
@@ -169,6 +172,50 @@ class Q2RetardsGaresPage(BasePage):
             "Retards propres : infrastructure, trafic, matériel roulant. "
             "Retards hérités : gestion en gare, réutilisation du matériel, voyageurs."
         )
+        
+    def _afficher_causes(self, retards: RetardsParGare) -> None:
+        """Répartit les retards des principales gares et croise les classements."""
+        nombre = self._state.get("nombre_gares", NOMBRE_PAR_DEFAUT)
+        table = retards.overall
+        total = table[DELAY_COLUMNS].sum(axis=1)
+        principales = table.loc[total.nlargest(nombre).index]
+        chart_container(
+            figure_repartition_causes(principales),
+            title=f"Origine des retards des {nombre} gares les plus touchées",
+            how_to_read=(
+                "Chaque barre représente 100 % des retards d'une gare. Les gares "
+                "sont triées par nombre total de retards, la plus touchée en haut."
+            ),
+            key=self._state.widget_key("repartition_causes"),
+        )
+
+        st.markdown("#### Gares présentes dans les deux classements")
+        croisees = croiser_classements(
+            table, "retard_non_heritees", "retard_heritees", nombre
+        )
+        if croisees.empty:
+            st.info(
+                "Aucune gare n'est à la fois parmi les plus responsables et "
+                "parmi les plus touchées par des retards hérités."
+            )
+            return
+        st.caption(
+            "Ces gares cumulent beaucoup de retards propres et beaucoup de "
+            "retards hérités : on ne peut pas les classer d'un seul côté."
+        )
+        affichage = croisees.rename(
+            columns={
+                "gare_depart": "Gare",
+                "retard_non_heritees": LIBELLES_CATEGORIES["retard_non_heritees"],
+                "retard_heritees": LIBELLES_CATEGORIES["retard_heritees"],
+                "rang_retard_non_heritees": "Rang (propres)",
+                "rang_retard_heritees": "Rang (hérités)",
+            }
+        ).round(0)
+        affichage[["Rang (propres)", "Rang (hérités)"]] = affichage[
+            ["Rang (propres)", "Rang (hérités)"]
+        ].astype(int)
+        st.dataframe(affichage, hide_index=True, width="stretch")
 
 
 Q2RetardsGaresPage(get_provider()).render()
