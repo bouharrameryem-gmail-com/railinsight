@@ -8,6 +8,7 @@ from railinsight.analysis.causes_retards import (
     filtrer_gares_significatives,
 )
 
+
 @pytest.fixture
 def gares():
     return pd.DataFrame(
@@ -37,6 +38,7 @@ def test_filtrer_minimum_zero_garde_tout(gares):
 def test_filtrer_minimum_negatif_leve_une_erreur(gares):
     with pytest.raises(ValueError, match="minimum"):
         filtrer_gares_significatives(gares, -1)
+
 
 @pytest.fixture
 def deux_classements():
