@@ -68,11 +68,10 @@ pages = [
         icon=":material/science:",
     ),
     # Q4 — Meryem
-    # st.Page(
-    #     "src/railinsight/ui/pages/q4_reliability_map.py",
-    #     title="Q4 — Carte de fiabilité",
-    #     icon=":material/map:",
-    # ),
+    st.Page(
+        "src/railinsight/ui/pages/q4_score_fiabilite.py",
+        title="Q4: Score de fiabilité",
+    ),
 ]
 
 pg = st.navigation(pages)

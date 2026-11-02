@@ -17,7 +17,7 @@ import logging
 
 import streamlit as st
 
-from railinsight.exceptions import RailInsightError
+from railinsight.exceptions import ErreurRailInsight, RailInsightError
 from railinsight.interfaces.data_protocols import DataProvider
 
 logger = logging.getLogger(__name__)
@@ -53,11 +53,10 @@ class BasePage(abc.ABC):
     # --- Template method (fixed order, do not override) ----------------------
 
     def render(self) -> None:
-        """Render the full page in the standard narrative order.
+        """Affiche les sections de la page dans l'ordre prévu.
 
-        Domain errors (RailInsightError subclasses) are shown as st.warning so
-        the user gets a readable message. Unexpected errors are logged with full
-        traceback and shown as st.error without the technical details.
+        Les deux familles d'erreurs métier donnent un avertissement lisible.
+        Les erreurs inattendues sont journalisées et affichées sans détail technique.
         """
         try:
             self._render_header()
@@ -66,16 +65,18 @@ class BasePage(abc.ABC):
             self._render_body()
             self._render_method_box()
             self._render_sources()
-        except RailInsightError as exc:
-            st.warning(f"⚠️ {exc}")
-            logger.warning("Domain error on page Q%d: %s", self.question_number, exc)
+        except (ErreurRailInsight, RailInsightError) as exc:
+            st.warning(str(exc))
+            logger.warning(
+                "Erreur métier sur la page Q%d : %s", self.question_number, exc
+            )
         except Exception:
             st.error(
                 "Une erreur inattendue s'est produite. "
                 "L’équipe technique a été notifiée."
             )
             logger.exception(
-                "Unexpected error on page Q%d (%s)",
+                "Erreur inattendue sur la page Q%d (%s)",
                 self.question_number,
                 self.__class__.__name__,
             )

@@ -5,8 +5,7 @@ from streamlit.testing.v1 import AppTest
 
 class TestBasePageHappyPath:
     def test_renders_without_exception(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 import streamlit as st
 from railinsight.adapters.fake_data_provider import FakeDataProvider
 from railinsight.ui.base_page import BasePage
@@ -22,14 +21,12 @@ class GoodPage(BasePage):
     def _render_body(self): st.write("body content")
 
 GoodPage(FakeDataProvider()).render()
-"""
-        )
+""")
         at.run()
         assert not at.exception
 
     def test_header_contains_rendered_content(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 import streamlit as st
 from railinsight.adapters.fake_data_provider import FakeDataProvider
 from railinsight.ui.base_page import BasePage
@@ -45,16 +42,38 @@ class GoodPage(BasePage):
     def _render_body(self): st.write("ok")
 
 GoodPage(FakeDataProvider()).render()
-"""
-        )
+""")
         at.run()
         assert len(at.markdown) > 0 or len(at.write) > 0
 
 
 class TestBasePageErrorHandling:
+    def test_french_domain_error_shows_warning(self):
+        at = AppTest.from_string("""
+import streamlit as st
+from railinsight.adapters.fake_data_provider import FakeDataProvider
+from railinsight.ui.base_page import BasePage
+from railinsight.exceptions import DonneesInvalides
+
+class ErrorPage(BasePage):
+    @property
+    def question_number(self): return 4
+    @property
+    def question_title(self): return "Fiabilité"
+    @property
+    def author(self): return "Test"
+    def _render_key_figures(self): raise DonneesInvalides("Aucune donnée.")
+    def _render_body(self): pass
+
+ErrorPage(FakeDataProvider()).render()
+""")
+        at.run()
+        assert not at.exception
+        assert not at.error
+        assert at.warning[0].value == "Aucune donnée."
+
     def test_domain_error_shows_warning_not_exception(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 import streamlit as st
 from railinsight.adapters.fake_data_provider import FakeDataProvider
 from railinsight.ui.base_page import BasePage
@@ -71,15 +90,13 @@ class ErrorPage(BasePage):
     def _render_body(self): raise InsufficientDataError("Pas assez.")
 
 ErrorPage(FakeDataProvider()).render()
-"""
-        )
+""")
         at.run()
         assert not at.exception
         assert len(at.warning) > 0
 
     def test_unexpected_error_shows_st_error(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 import streamlit as st
 from railinsight.adapters.fake_data_provider import FakeDataProvider
 from railinsight.ui.base_page import BasePage
@@ -95,8 +112,7 @@ class CrashPage(BasePage):
     def _render_body(self): raise RuntimeError("boom")
 
 CrashPage(FakeDataProvider()).render()
-"""
-        )
+""")
         at.run()
         assert not at.exception
         assert len(at.error) > 0

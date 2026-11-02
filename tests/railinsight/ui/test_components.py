@@ -2,9 +2,12 @@
 
 from pathlib import Path
 
+import plotly.graph_objects as go
+import pytest
 from streamlit.testing.v1 import AppTest
 
 from railinsight.adapters.fake_data_provider import FakeDataProvider
+from railinsight.ui.components.chart_container import chart_container
 
 _PAGES_DIR = Path(__file__).parents[3] / "src" / "railinsight" / "ui" / "pages"
 
@@ -19,33 +22,27 @@ _provider = FakeDataProvider(seed=42)
 
 class TestKpiCard:
     def test_single_card_renders(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 import streamlit as st
 from railinsight.ui.components.kpi_card import kpi_card
 kpi_card("Retards", "27,3 %", delta="-1 pt", help="test")
-"""
-        )
+""")
         at.run()
         assert not at.exception
 
     def test_kpi_row_renders(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 from railinsight.ui.components.kpi_card import kpi_row
 kpi_row([{"label": "A", "value": "1"}, {"label": "B", "value": "2"}])
-"""
-        )
+""")
         at.run()
         assert not at.exception
 
     def test_kpi_row_empty_list(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 from railinsight.ui.components.kpi_card import kpi_row
 kpi_row([])
-"""
-        )
+""")
         at.run()
         assert not at.exception
 
@@ -57,22 +54,18 @@ kpi_row([])
 
 class TestInsightBox:
     def test_renders(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 from railinsight.ui.components.insight_box import insight_box
 insight_box("Les liaisons longues concentrent les retards.")
-"""
-        )
+""")
         at.run()
         assert not at.exception
 
     def test_custom_title(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 from railinsight.ui.components.insight_box import insight_box
 insight_box("Result.", title="Résultat principal")
-"""
-        )
+""")
         at.run()
         assert not at.exception
 
@@ -83,27 +76,39 @@ insight_box("Result.", title="Résultat principal")
 
 
 class TestChartContainer:
+    @pytest.mark.parametrize("etirer,largeur", [(True, "stretch"), (False, "content")])
+    def test_largeur_et_cle_transmises(self, monkeypatch, etirer, largeur):
+        appels = []
+        monkeypatch.setattr(
+            "railinsight.ui.components.chart_container.st.markdown",
+            lambda texte: None,
+        )
+        monkeypatch.setattr(
+            "railinsight.ui.components.chart_container.st.plotly_chart",
+            lambda figure, **options: appels.append(options),
+        )
+        chart_container(
+            go.Figure(), "Test", use_container_width=etirer, key="graphique_test"
+        )
+        assert appels == [{"width": largeur, "key": "graphique_test"}]
+
     def test_renders_without_optional_args(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 import plotly.graph_objects as go
 from railinsight.ui.components.chart_container import chart_container
 chart_container(go.Figure(), "Titre du graphique")
-"""
-        )
+""")
         at.run()
         assert not at.exception
 
     def test_renders_with_how_to_read(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 import plotly.graph_objects as go
 from railinsight.ui.components.chart_container import chart_container
 chart_container(
     go.Figure(), "Titre", how_to_read="Lire de gauche à droite.", caption="Note."
 )
-"""
-        )
+""")
         at.run()
         assert not at.exception
 
@@ -115,40 +120,34 @@ chart_container(
 
 class TestDataTable:
     def test_renders_basic(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 import pandas as pd
 from railinsight.ui.components.data_table import data_table
 df = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
 data_table(df, title="Table test", key="test_dt")
-"""
-        )
+""")
         at.run()
         assert not at.exception
 
     def test_download_button_present(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 import pandas as pd
 from railinsight.ui.components.data_table import data_table
 df = pd.DataFrame({"x": range(5)})
 data_table(df, filename="test.csv", key="test_dl")
-"""
-        )
+""")
         at.run()
         assert not at.exception
         # st.download_button is exposed as at.download_button in AppTest
         assert len(at.download_button) > 0
 
     def test_max_rows_truncation(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 import pandas as pd
 from railinsight.ui.components.data_table import data_table
 df = pd.DataFrame({"x": range(20)})
 data_table(df, max_rows=3, key="test_trunc")
-"""
-        )
+""")
         at.run()
         assert not at.exception
 
@@ -160,47 +159,39 @@ data_table(df, max_rows=3, key="test_trunc")
 
 class TestFilters:
     def test_period_filter_renders(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 import pandas as pd
 from railinsight.ui.components.filters import period_filter
 periods = list(pd.period_range("2020-01", "2022-12", freq="M"))
 start, end = period_filter(periods, key_prefix="test")
-"""
-        )
+""")
         at.run()
         assert not at.exception
 
     def test_exclusion_filter_renders(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 from railinsight.ui.components.filters import exclusion_filter
 result = exclusion_filter(key_prefix="test")
 assert result in ("none", "known", "data")
-"""
-        )
+""")
         at.run()
         assert not at.exception
 
     def test_min_months_filter_renders(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 from railinsight.ui.components.filters import min_months_filter
 result = min_months_filter(key_prefix="test")
 assert isinstance(result, int)
-"""
-        )
+""")
         at.run()
         assert not at.exception
 
     def test_duration_adjust_toggle_renders(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 from railinsight.ui.components.filters import duration_adjust_toggle
 result = duration_adjust_toggle(key_prefix="test")
 assert isinstance(result, bool)
-"""
-        )
+""")
         at.run()
         assert not at.exception
 
@@ -212,12 +203,10 @@ assert isinstance(result, bool)
 
 class TestMethodBox:
     def test_renders(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 from railinsight.ui.components.method_box import method_box
 method_box("**Méthode :** ratio de sommes.")
-"""
-        )
+""")
         at.run()
         assert not at.exception
 
@@ -229,44 +218,36 @@ method_box("**Méthode :** ratio de sommes.")
 
 class TestWarnings:
     def test_small_sample_above_threshold_shows_nothing(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 from railinsight.ui.components.warnings import small_sample_warning
 small_sample_warning(n=20)
-"""
-        )
+""")
         at.run()
         assert not at.exception
         assert len(at.warning) == 0
 
     def test_small_sample_below_threshold_shows_warning(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 from railinsight.ui.components.warnings import small_sample_warning
 small_sample_warning(n=3)
-"""
-        )
+""")
         at.run()
         assert not at.exception
         assert len(at.warning) > 0
 
     def test_missing_data_zero_shows_nothing(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 from railinsight.ui.components.warnings import missing_data_warning
 missing_data_warning(n_missing=0, total=100)
-"""
-        )
+""")
         at.run()
         assert len(at.warning) == 0
 
     def test_missing_data_nonzero_shows_warning(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 from railinsight.ui.components.warnings import missing_data_warning
 missing_data_warning(n_missing=10, total=100, column="late30_rate")
-"""
-        )
+""")
         at.run()
         assert len(at.warning) > 0
 
@@ -278,16 +259,14 @@ missing_data_warning(n_missing=10, total=100, column="late30_rate")
 
 class TestRouteCard:
     def test_renders(self):
-        at = AppTest.from_string(
-            """
+        at = AppTest.from_string("""
 from railinsight.ui.components.route_card import route_card
 route_card(
     route="PARIS LYON → MARSEILLE",
     indicators={"Retards": "25 %"},
     cluster_name="Groupe A",
 )
-"""
-        )
+""")
         at.run()
         assert not at.exception
 
