@@ -69,6 +69,7 @@ def rank_stations(table: pd.DataFrame, column: str, n: int = 15) -> pd.DataFrame
     """Renvoie les n gares ayant les valeurs les plus élevées dans une colonne."""
     return table.nlargest(n, column)
 
+
 def filtrer_gares_significatives(table: pd.DataFrame, minimum: int) -> pd.DataFrame:
     """Garde les lignes dont le total de retards atteint un minimum.
 
@@ -109,7 +110,11 @@ def croiser_classements(
     rang_a = table[colonne_a].rank(ascending=False, method="first")
     rang_b = table[colonne_b].rank(ascending=False, method="first")
     dans_les_deux = (rang_a <= n) & (rang_b <= n)
-    resultat = table.loc[dans_les_deux, ["gare_depart", colonne_a, colonne_b]].assign(
-        **{f"rang_{colonne_a}": rang_a, f"rang_{colonne_b}": rang_b}
-    )
+    rang_a = table[colonne_a].rank(ascending=False, method="first")
+    rang_b = table[colonne_b].rank(ascending=False, method="first")
+    dans_les_deux = (rang_a <= n) & (rang_b <= n)
+    resultat = table.loc[dans_les_deux, ["gare_depart", colonne_a, colonne_b]].copy()
+
+    resultat[f"rang_{colonne_a}"] = rang_a[dans_les_deux]
+    resultat[f"rang_{colonne_b}"] = rang_b[dans_les_deux]
     return resultat.sort_values(f"rang_{colonne_a}").reset_index(drop=True)
