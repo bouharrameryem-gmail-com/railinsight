@@ -68,3 +68,53 @@ def ajouter_parts_retard(table: pd.DataFrame) -> pd.DataFrame:
 def rank_stations(table: pd.DataFrame, column: str, n: int = 15) -> pd.DataFrame:
     """Renvoie les n gares ayant les valeurs les plus élevées dans une colonne."""
     return table.nlargest(n, column)
+
+
+def filtrer_gares_significatives(table: pd.DataFrame, minimum: int) -> pd.DataFrame:
+    """Garde les lignes dont le total de retards atteint un minimum.
+
+    Évite qu'une gare avec très peu de retards domine un classement en parts.
+
+    Args:
+        table: Résultat de `agreger_par_gare`, avec les colonnes de DELAY_COLUMNS.
+        minimum: Nombre minimal de retards (toutes catégories confondues).
+
+    Returns:
+        Une copie des lignes retenues, index remis à zéro.
+
+    Raises:
+        ValueError: Si `minimum` est négatif.
+    """
+    if minimum < 0:
+        raise ValueError(f"minimum doit être positif ou nul, reçu : {minimum!r}")
+    total = table[DELAY_COLUMNS].sum(axis=1)
+    return table[total >= minimum].reset_index(drop=True)
+
+
+def croiser_classements(
+    table: pd.DataFrame, colonne_a: str, colonne_b: str, n: int = 15
+) -> pd.DataFrame:
+    """Repère les gares présentes dans les n premières de deux classements.
+
+    Args:
+        table: Une ligne par gare, avec `gare_depart`, `colonne_a` et `colonne_b`.
+        colonne_a: Colonne du premier classement (valeur la plus haute en tête).
+        colonne_b: Colonne du second classement.
+        n: Taille du haut de classement considéré.
+
+    Returns:
+        Les gares présentes dans les deux hauts de classement, avec leurs deux
+        valeurs et leurs deux rangs (`rang_<colonne>`), triées selon le premier
+        rang. Les valeurs manquantes ne sont jamais classées.
+    """
+    rang_a = table[colonne_a].rank(ascending=False, method="first")
+    rang_b = table[colonne_b].rank(ascending=False, method="first")
+    dans_les_deux = (rang_a <= n) & (rang_b <= n)
+    rang_a = table[colonne_a].rank(ascending=False, method="first")
+    rang_b = table[colonne_b].rank(ascending=False, method="first")
+    dans_les_deux = (rang_a <= n) & (rang_b <= n)
+    resultat = table.loc[dans_les_deux, ["gare_depart", colonne_a, colonne_b]].copy()
+
+    resultat[f"rang_{colonne_a}"] = rang_a[dans_les_deux]
+    resultat[f"rang_{colonne_b}"] = rang_b[dans_les_deux]
+    return resultat.sort_values(f"rang_{colonne_a}").reset_index(drop=True)
