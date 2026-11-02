@@ -319,7 +319,7 @@ ils diffèrent.
 |---|---|---|---|---|---|
 | Q1 — notebook `Q1_liaisons_moins_fiables` (branche `analysis/question1`, non fusionnée) | `lire_donnees` + `nettoyer_regularite` | Liaison orientée | National + International | 0 train prévu (`retirer_sans_train`) | D4c (2 mois) |
 | Q2 — notebook `Q2_gare_responsable_retard` | CSV brut | Gare de départ | **National seulement**, 2020 incluse | Aucune | Aucune |
-| Q2 — module (`causes_retards.py`, `backend/retards_gares.py`) | `charger_donnees()` (schéma validé) | Gare de départ | **National seulement**, **2020 exclue par défaut** | Lignes sans aucune part de cause | Aucune |
+| Q2 — module (`causes_retards.py`, `backend/retards_gares.py`, page `q2_departure_stations`) | `charger_donnees()` (schéma validé) | Gare de départ | **National seulement**, **2020 exclue par défaut** | Lignes sans aucune part de cause | Aucune |
 | Q3 — notebook `Q3_punctuality_profiles_EDA` | CSV brut, nettoyage dans le notebook | Liaison orientée | National + International | D2 ; liaisons < 24 mois | D1 à D10 |
 | Q3 — application (`indicateurs_liaisons.py`, pages `q3_*`) | `nettoyer_regularite` | Liaison orientée | **National seulement** | Mois exclus ; liaisons < 24 mois | Aucune des règles D1–D10 |
 | Q4 — notebook `Q4_score_fiabilite` | CSV brut | Liaison **non orientée** (65 retenues) | National + International | 0 train prévu ; liaisons < 100 trains | Aucune (constat du 2026-10-29) |

@@ -88,7 +88,7 @@ Loads schema-validated source data and orchestrates analysis for the UI.
 No Streamlit dependency; unit-tested with pytest.
 
 ### `railinsight.ui.pages`
-Contains the home page, the Q3 and Q4 pages, reusable templates, and a component demo. The target
+Contains the home page, the Q2, Q3 and Q4 pages, reusable templates, and a component demo. The target
 pattern is one page entry point per analysis, delegating data work to the backend/provider.
 Shared widgets go in `ui.components`.
 
