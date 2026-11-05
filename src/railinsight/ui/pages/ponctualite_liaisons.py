@@ -166,9 +166,6 @@ class PageProfilsPonctualite(BasePage):
 
         st.divider()
 
-        mapping_cluster = dict(
-            zip(resultats.indicateurs.index, resultats.etiquettes, strict=True)
-        )
         df_pca = pd.DataFrame(
             {
                 "Dimension 1": resultats.pca_coordonnees[:, 0],
@@ -204,8 +201,6 @@ class PageProfilsPonctualite(BasePage):
                 "en termes de ponctualité. La position n'est pas géographique."
             ),
         )
-        # mapping_cluster utilisé uniquement pour construire df_pca
-        _ = mapping_cluster
 
     def _carte_profil(self, cluster_idx: int, resultats: ResultatClustering) -> None:
         """Affiche un résumé chiffré d'un profil."""
