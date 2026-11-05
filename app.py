@@ -61,7 +61,7 @@ pages = [
     ),
     # Q3 — Bachelard
     st.Page(
-        "src/railinsight/ui/pages/q3.py",
+        "src/railinsight/ui/pages/ponctualite_liaisons.py",
         title="Q3 — Profils de ponctualité",
         icon=":material/scatter_plot:",
     ),
