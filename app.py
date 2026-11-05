@@ -54,11 +54,11 @@ pages = [
     #     icon=":material/trending_down:",
     # ),
     # Q2 — Éric
-    # st.Page(
-    #     "src/railinsight/ui/pages/q2_departure_stations.py",
-    #     title="Q2 — Gares responsables",
-    #     icon=":material/alt_route:",
-    # ),
+    st.Page(
+        "src/railinsight/ui/pages/q2_departure_stations.py",
+        title="Q2 — Gares responsables",
+        icon=":material/alt_route:",
+    ),
     # Q3 — Bachelard
     st.Page(
         "src/railinsight/ui/pages/q3.py",
@@ -66,11 +66,10 @@ pages = [
         icon=":material/scatter_plot:",
     ),
     # Q4 — Meryem
-    # st.Page(
-    #     "src/railinsight/ui/pages/q4_reliability_map.py",
-    #     title="Q4 — Carte de fiabilité",
-    #     icon=":material/map:",
-    # ),
+    st.Page(
+        "src/railinsight/ui/pages/q4_score_fiabilite.py",
+        title="Q4: Score de fiabilité",
+    ),
 ]
 
 pg = st.navigation(pages)

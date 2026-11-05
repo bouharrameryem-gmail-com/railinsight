@@ -8,6 +8,12 @@ chemins:                      # relatifs à la racine du projet
   traitees: data/processed
   modeles: models
 
+# Analyse 1 : liaisons les moins fiables (notebooks/01_liaisons_moins_fiables.ipynb)
+liaisons_fiabilite:
+  covid_debut: "2020-03"      # premier mois exclu de la pente de tendance
+  covid_fin: "2021-06"        # dernier mois exclu de la pente de tendance
+  top_n: 10                   # taille du classement
+
 # Analyse 3 : profils de ponctualité (notebooks/Q3_punctuality_profiles_EDA.ipynb)
 q3:
   feature_set: "v3"         # jeu d'indicateurs : v3 | fixed | composite

@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
+    "filelock>=4.2.1",
     "networkx>=3.7",
     "numpy>=2.5.3",
     "pandas>=3.0.6",
@@ -19,6 +20,7 @@ dependencies = [
     "scipy>=1.18.1",
     "statsmodels>=0.15.0",
     "streamlit>=1.64.0",
+    "tornado>=6.6",
 ]
 
 [project.scripts]
@@ -30,6 +32,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "black>=26.10.1",
     "furo>=2025.12.19",
     "interrogate>=1.7.0",
     "jupyterlab>=4.6.4",

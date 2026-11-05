@@ -18,8 +18,7 @@ from railinsight.utils.validation import (
     verifier_periode,
 )
 
-# The package lives at src/railinsight/, so three .parent calls reach the repo root.
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DATA_DIR = DATA_DIR / "raw"
@@ -40,16 +39,12 @@ DEFAULT_MIN_MONTHS: int = 24
 DEFAULT_EXCLUSION: str = "known"
 DEFAULT_ADJUST_DURATION: bool = False
 
-RACINE = Path(__file__).resolve().parents[2]  # racine du dépôt
-DEFAUT = RACINE / "config" / "defaut.yaml"
-
-
-# ---------- les sections (une dataclass par bloc du YAML) ----------
+DEFAUT = PROJECT_ROOT / "config" / "defaut.yaml"
 
 
 @dataclass(frozen=True)
 class Chemins:
-    """Chemins du projet, convertis en chemins absolus depuis la racine."""
+    """Chemins du projet, convertis en chemins absolus depuis la PROJECT_ROOT."""
 
     donnees: Path
     traitees: Path
@@ -61,8 +56,34 @@ class Chemins:
             valeur = getattr(self, champ.name)
             if not isinstance(valeur, str | Path) or not str(valeur).strip():
                 raise ConfigInvalide(f"clé absente ou vide : 'chemins.{champ.name}'")
-            # frozen=True interdit `self.x = ...` ; object.__setattr__ le contourne
-            object.__setattr__(self, champ.name, RACINE / valeur)
+            chemin = Path(valeur)
+            if not chemin.is_absolute():
+                chemin = PROJECT_ROOT / chemin
+            object.__setattr__(self, champ.name, chemin)
+
+
+@dataclass(frozen=True)
+class LiaisonsFiabilite:
+    """Paramètres de l'analyse « liaisons les moins fiables » (Q1)."""
+
+    covid_debut: str
+    covid_fin: str
+    top_n: int
+
+    def __post_init__(self) -> None:
+        """Valide la fenêtre exclue de la tendance et la taille du classement."""
+        for cle in ("covid_debut", "covid_fin"):
+            valeur = getattr(self, cle)
+            if valeur is None:
+                raise ConfigInvalide(
+                    f"clé absente ou vide : 'liaisons_fiabilite.{cle}'"
+                )
+            verifier_periode(f"liaisons_fiabilite.{cle}", valeur)
+        if self.covid_debut > self.covid_fin:
+            raise ConfigInvalide(
+                "'liaisons_fiabilite.covid_debut' doit être <= 'covid_fin'"
+            )
+        verifier_entier("liaisons_fiabilite.top_n", self.top_n, minimum=1)
 
 
 @dataclass(frozen=True)
@@ -108,51 +129,13 @@ class ScoreFiabilite:
 
 
 @dataclass(frozen=True)
-class Q3Config:
-    """Canonical parameters for the Q3 punctuality profiling analysis."""
-
-    feature_set: str
-    exclusion: str
-    min_months: int
-    scaler: str
-
-    def __post_init__(self) -> None:
-        """Validate Q3 analysis parameters."""
-        valid_feature_sets = {"v3", "fixed", "composite"}
-        if self.feature_set not in valid_feature_sets:
-            raise ConfigInvalide(
-                f"'q3.feature_set' doit être l'un de {valid_feature_sets}, "
-                f"reçu : {self.feature_set!r}"
-            )
-        valid_exclusions = {"none", "known", "data"}
-        if self.exclusion not in valid_exclusions:
-            raise ConfigInvalide(
-                f"'q3.exclusion' doit être l'un de {valid_exclusions}, "
-                f"reçu : {self.exclusion!r}"
-            )
-        verifier_entier("q3.min_months", self.min_months, minimum=1)
-        valid_scalers = {"power", "standard"}
-        if self.scaler not in valid_scalers:
-            raise ConfigInvalide(
-                f"'q3.scaler' doit être l'un de {valid_scalers}, reçu : {self.scaler!r}"
-            )
-
-
-# >>> Pour ajouter votre analyse : une dataclass ici <<<
-
-
-@dataclass(frozen=True)
 class Config:
     """Configuration complète : un champ par bloc du YAML."""
 
     graine: int
     chemins: Chemins
+    liaisons_fiabilite: LiaisonsFiabilite
     score_fiabilite: ScoreFiabilite
-    q3: Q3Config
-    # >>> et un champ ici, avec le même nom que la section du YAML <<<
-
-
-# ---------- lecture, fusion, validation ----------
 
 
 def _lire(chemin: Path) -> dict:
@@ -223,20 +206,14 @@ def valider(brut: dict) -> Config:
 
 
 def charger_config(chemin=None, environ=None) -> Config:
-    """Charge defaut.yaml, le surcharge avec un fichier optionnel, puis valide.
-
-    Args:
-        chemin: YAML de surcharge, relatif à la racine du projet. Il ne contient
-            que les clés à modifier. Par défaut : variable RAILINSIGHT_CONFIG.
-        environ: variables d'environnement (os.environ par défaut ; utile en test).
-
-    Raises:
-        ConfigInvalide: fichier introuvable, clé inconnue ou valeur invalide.
-    """
+    """Charge la configuration par défaut et applique une surcharge optionnelle."""
     environ = os.environ if environ is None else environ
     chemin = chemin or environ.get("RAILINSIGHT_CONFIG")
 
     brut = _lire(DEFAUT)
     if chemin:
-        brut = _fusion(brut, _lire(RACINE / chemin))
+        chemin = Path(chemin)
+        if not chemin.is_absolute():
+            chemin = PROJECT_ROOT / chemin
+        brut = _fusion(brut, _lire(chemin))
     return valider(brut)
