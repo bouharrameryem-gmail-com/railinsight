@@ -6,13 +6,9 @@ import plotly.graph_objects as go
 import pytest
 from streamlit.testing.v1 import AppTest
 
-from railinsight.adapters.fake_data_provider import FakeDataProvider
 from railinsight.ui.components.chart_container import chart_container
 
 _PAGES_DIR = Path(__file__).parents[3] / "src" / "railinsight" / "ui" / "pages"
-
-# Shared provider for tests that don't need AppTest
-_provider = FakeDataProvider(seed=42)
 
 
 # ---------------------------------------------------------------------------

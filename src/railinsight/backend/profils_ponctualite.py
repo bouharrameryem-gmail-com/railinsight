@@ -127,7 +127,7 @@ def clusteriser(
 
     pca = PCA(n_components=2, random_state=42).fit(x_scaled)
     coordonnees = pca.transform(x_scaled)
-    noms = _nommer_clusters(x_df, etiquettes, k_effectif)
+    noms = _nommer_clusters(indicateurs.loc[x_df.index], etiquettes, k_effectif)
     redondances = detect_redundancy(indicateurs, disponibles)
 
     return ResultatClustering(

@@ -36,7 +36,7 @@ _NOMS_EXCLUSION = {
 }
 
 _LABELS_JEU = {
-    "v3": "Sévérité & volatilité",
+    "v3": "Retards et irrégularité (recommandé)",
     "fixed": "Fréquence & chronicité",
     "composite": "Arrivée & délai moyen",
 }

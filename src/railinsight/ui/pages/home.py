@@ -61,7 +61,7 @@ def render(provider: DataProvider) -> None:
     """
     inject_global_css()
     _render_hero()
-    _render_network_kpis(provider)
+    _render_network_kpis()
     st.markdown("<br>", unsafe_allow_html=True)
     _render_question_cards()
     _render_about(provider)
@@ -115,7 +115,7 @@ def _charger_kpis_accueil() -> tuple[int, float, float]:
     return n_liaisons, avg_late15, avg_cancel
 
 
-def _render_network_kpis(provider: DataProvider) -> None:
+def _render_network_kpis() -> None:
     """Render 3 network-level KPI cards (last 12 months)."""
     st.markdown(
         '<p style="font-size:0.72rem;font-weight:700;color:#9BA3AE;'

@@ -7,7 +7,6 @@ class TestBasePageHappyPath:
     def test_renders_without_exception(self):
         at = AppTest.from_string("""
 import streamlit as st
-from railinsight.adapters.fake_data_provider import FakeDataProvider
 from railinsight.ui.base_page import BasePage
 
 class GoodPage(BasePage):
@@ -20,7 +19,7 @@ class GoodPage(BasePage):
     def _render_key_figures(self): st.metric("KPI", "1")
     def _render_body(self): st.write("body content")
 
-GoodPage(FakeDataProvider()).render()
+GoodPage(None).render()
 """)
         at.run()
         assert not at.exception
@@ -28,7 +27,6 @@ GoodPage(FakeDataProvider()).render()
     def test_header_contains_rendered_content(self):
         at = AppTest.from_string("""
 import streamlit as st
-from railinsight.adapters.fake_data_provider import FakeDataProvider
 from railinsight.ui.base_page import BasePage
 
 class GoodPage(BasePage):
@@ -41,7 +39,7 @@ class GoodPage(BasePage):
     def _render_key_figures(self): st.metric("K", "1")
     def _render_body(self): st.write("ok")
 
-GoodPage(FakeDataProvider()).render()
+GoodPage(None).render()
 """)
         at.run()
         assert len(at.markdown) > 0 or len(at.write) > 0
@@ -51,7 +49,6 @@ class TestBasePageErrorHandling:
     def test_french_domain_error_shows_warning(self):
         at = AppTest.from_string("""
 import streamlit as st
-from railinsight.adapters.fake_data_provider import FakeDataProvider
 from railinsight.ui.base_page import BasePage
 from railinsight.exceptions import DonneesInvalides
 
@@ -65,7 +62,7 @@ class ErrorPage(BasePage):
     def _render_key_figures(self): raise DonneesInvalides("Aucune donnée.")
     def _render_body(self): pass
 
-ErrorPage(FakeDataProvider()).render()
+ErrorPage(None).render()
 """)
         at.run()
         assert not at.exception
@@ -75,7 +72,6 @@ ErrorPage(FakeDataProvider()).render()
     def test_domain_error_shows_warning_not_exception(self):
         at = AppTest.from_string("""
 import streamlit as st
-from railinsight.adapters.fake_data_provider import FakeDataProvider
 from railinsight.ui.base_page import BasePage
 from railinsight.exceptions import InsufficientDataError
 
@@ -89,7 +85,7 @@ class ErrorPage(BasePage):
     def _render_key_figures(self): st.metric("K", "1")
     def _render_body(self): raise InsufficientDataError("Pas assez.")
 
-ErrorPage(FakeDataProvider()).render()
+ErrorPage(None).render()
 """)
         at.run()
         assert not at.exception
@@ -98,7 +94,6 @@ ErrorPage(FakeDataProvider()).render()
     def test_unexpected_error_shows_st_error(self):
         at = AppTest.from_string("""
 import streamlit as st
-from railinsight.adapters.fake_data_provider import FakeDataProvider
 from railinsight.ui.base_page import BasePage
 
 class CrashPage(BasePage):
@@ -111,7 +106,7 @@ class CrashPage(BasePage):
     def _render_key_figures(self): st.metric("K", "1")
     def _render_body(self): raise RuntimeError("boom")
 
-CrashPage(FakeDataProvider()).render()
+CrashPage(None).render()
 """)
         at.run()
         assert not at.exception
