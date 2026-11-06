@@ -69,7 +69,9 @@ def _analyser(
     debut: str | None, fin: str | None, exclusion: str, k: int | None, jeu: str
 ) -> ResultatClustering:
     donnees = _donnees_brutes()
-    indicateurs = construire_indicateurs(donnees, debut=debut, fin=fin, exclusion=exclusion)
+    indicateurs = construire_indicateurs(
+        donnees, debut=debut, fin=fin, exclusion=exclusion
+    )
     return clusteriser(indicateurs, k=k, jeu_variables=jeu)
 
 
@@ -280,7 +282,7 @@ class PageProfilsPonctualite(BasePage):
         contenu = f"{n} liaison{'s' if n > 1 else ''}\n\n" + "\n".join(lignes)
         st.markdown(
             f'<div style="border-left:4px solid {couleur};padding:12px 16px;'
-            f"background:#F5F7FA;border-radius:4px;margin-bottom:8px;\">"
+            f'background:#F5F7FA;border-radius:4px;margin-bottom:8px;">'
             f'<strong style="color:{couleur};">{nom}</strong><br>'
             f'<span style="font-size:0.85em;">{contenu}</span>'
             f"</div>",
@@ -309,7 +311,7 @@ class PageProfilsPonctualite(BasePage):
 
         st.markdown(
             f'<div style="border-left:4px solid {couleur};padding:12px 16px;'
-            f"background:#F5F7FA;border-radius:4px;margin-bottom:16px;\">"
+            f'background:#F5F7FA;border-radius:4px;margin-bottom:16px;">'
             f'<strong style="color:{couleur};">Profil : {nom_cluster}</strong>'
             f"</div>",
             unsafe_allow_html=True,
@@ -329,7 +331,8 @@ class PageProfilsPonctualite(BasePage):
 
     def _render_method_box(self) -> None:
         method_box(
-            "**Méthode.** Les liaisons sont décrites par des indicateurs de ponctualité "
+            "**Méthode.** Les liaisons sont décrites par des indicateurs "
+            "de ponctualité "
             "(annulations, retards, irrégularité mensuelle). "
             "Un algorithme K-means regroupe les liaisons similaires. "
             "Les mois de grèves et de Covid peuvent être exclus "

@@ -42,7 +42,10 @@ def _reseau_mensuel():
     donnees = charger_donnees_clean()
     par_mois = (
         donnees.groupby("mois")
-        .agg(circules=("circules", "sum"), retards_sup_15min=("retards_sup_15min", "sum"))
+        .agg(
+            circules=("circules", "sum"),
+            retards_sup_15min=("retards_sup_15min", "sum"),
+        )
         .sort_values("mois")
         .reset_index()
     )
@@ -53,14 +56,18 @@ def _reseau_mensuel():
 @st.cache_data(show_spinner=False)
 def _indicateurs_liaisons():
     donnees = charger_donnees_clean()
-    indicateurs = construire_indicateurs_liaison(donnees, exclusion="known", min_months=1)
+    indicateurs = construire_indicateurs_liaison(
+        donnees, exclusion="known", min_months=1
+    )
     return indicateurs.reset_index().rename(columns={"liaison": "route"})
 
 
 @st.cache_data(show_spinner=False)
 def _donnees_brutes():
     donnees = charger_donnees_clean()
-    return donnees.drop(columns=["date"]).rename(columns={"mois": "date", "liaison": "route"})
+    return donnees.drop(columns=["date"]).rename(
+        columns={"mois": "date", "liaison": "route"}
+    )
 
 
 def render() -> None:
