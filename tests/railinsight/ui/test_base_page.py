@@ -19,7 +19,7 @@ class GoodPage(BasePage):
     def _render_key_figures(self): st.metric("KPI", "1")
     def _render_body(self): st.write("body content")
 
-GoodPage(None).render()
+GoodPage().render()
 """)
         at.run()
         assert not at.exception
@@ -39,7 +39,7 @@ class GoodPage(BasePage):
     def _render_key_figures(self): st.metric("K", "1")
     def _render_body(self): st.write("ok")
 
-GoodPage(None).render()
+GoodPage().render()
 """)
         at.run()
         assert len(at.markdown) > 0 or len(at.write) > 0
@@ -62,7 +62,7 @@ class ErrorPage(BasePage):
     def _render_key_figures(self): raise DonneesInvalides("Aucune donnée.")
     def _render_body(self): pass
 
-ErrorPage(None).render()
+ErrorPage().render()
 """)
         at.run()
         assert not at.exception
@@ -85,7 +85,7 @@ class ErrorPage(BasePage):
     def _render_key_figures(self): st.metric("K", "1")
     def _render_body(self): raise InsufficientDataError("Pas assez.")
 
-ErrorPage(None).render()
+ErrorPage().render()
 """)
         at.run()
         assert not at.exception
@@ -106,7 +106,7 @@ class CrashPage(BasePage):
     def _render_key_figures(self): st.metric("K", "1")
     def _render_body(self): raise RuntimeError("boom")
 
-CrashPage(None).render()
+CrashPage().render()
 """)
         at.run()
         assert not at.exception

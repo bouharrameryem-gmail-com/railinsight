@@ -17,11 +17,9 @@ from railinsight.backend.profils_ponctualite import (
     construire_indicateurs,
 )
 from railinsight.exceptions import RailInsightError
-from railinsight.interfaces.data_protocols import DataProvider
 from railinsight.ui.base_page import BasePage
 from railinsight.ui.components.chart_container import chart_container
 from railinsight.ui.components.method_box import method_box
-from railinsight.ui.providers import get_provider
 from railinsight.ui.state.base_state import PageState
 from railinsight.ui.theme.tokens import CLUSTER_COLORS
 from railinsight.utils.formatting import fmt_number, fmt_pct
@@ -78,8 +76,8 @@ def _analyser(
 class PageProfilsPonctualite(BasePage):
     """Regroupe les liaisons TGV par profil de ponctualité via K-means."""
 
-    def __init__(self, provider: DataProvider) -> None:
-        super().__init__(provider)
+    def __init__(self) -> None:
+        super().__init__()
         self._etat = PageState(page_key="ponctualite")
 
     @property
@@ -342,4 +340,4 @@ class PageProfilsPonctualite(BasePage):
         )
 
 
-PageProfilsPonctualite(get_provider()).render()
+PageProfilsPonctualite().render()

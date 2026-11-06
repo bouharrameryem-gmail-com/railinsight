@@ -9,11 +9,9 @@ from railinsight.backend.fiabilite import (
     charger_table_score,
     positions_reseau,
 )
-from railinsight.interfaces.data_protocols import DataProvider
 from railinsight.ui.base_page import BasePage
 from railinsight.ui.components.chart_container import chart_container
 from railinsight.ui.components.method_box import method_box
-from railinsight.ui.providers import get_provider
 from railinsight.ui.state.base_state import PageState
 from railinsight.utils.formatting import fmt_month, fmt_number, fmt_pct
 from railinsight.viz.fiabilite import (
@@ -97,8 +95,8 @@ def _nom_mois(mois: str) -> str:
 class Q4ScoreFiabilitePage(BasePage):
     """Affiche le score de fiabilité sans réglages techniques."""
 
-    def __init__(self, provider: DataProvider) -> None:
-        super().__init__(provider)
+    def __init__(self) -> None:
+        super().__init__()
         self._state = PageState(page_key="q4_score_fiabilite")
 
     @property
@@ -320,4 +318,4 @@ class Q4ScoreFiabilitePage(BasePage):
         )
 
 
-Q4ScoreFiabilitePage(get_provider()).render()
+Q4ScoreFiabilitePage().render()

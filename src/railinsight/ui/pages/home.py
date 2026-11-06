@@ -10,9 +10,7 @@ import logging
 import streamlit as st
 
 from railinsight.backend.profils_ponctualite import charger_donnees_clean
-from railinsight.interfaces.data_protocols import DataProvider
 from railinsight.ui.components.kpi_card import kpi_row
-from railinsight.ui.providers import get_provider
 from railinsight.ui.theme.css import inject_global_css
 from railinsight.ui.theme.tokens import QUESTION_COLORS
 from railinsight.utils.formatting import fmt_pct
@@ -53,18 +51,14 @@ _QUESTIONS = [
 ]
 
 
-def render(provider: DataProvider) -> None:
-    """Render the RailInsight home page.
-
-    Args:
-        provider: Data provider used to load network KPIs.
-    """
+def render() -> None:
+    """Render the RailInsight home page."""
     inject_global_css()
     _render_hero()
     _render_network_kpis()
     st.markdown("<br>", unsafe_allow_html=True)
     _render_question_cards()
-    _render_about(provider)
+    _render_about()
 
 
 def _render_hero() -> None:
@@ -190,22 +184,14 @@ def _render_question_cards() -> None:
                 st.caption("En cours de développement")
 
 
-def _render_about(provider: DataProvider) -> None:
+def _render_about() -> None:
     """Render the data quality and methodology expander."""
     st.markdown("<br>", unsafe_allow_html=True)
     with st.expander("Qualité des données et méthodologie", expanded=False):
         st.markdown(
             "Les données proviennent du jeu open data SNCF "
-            "*Régularité mensuelle TGV (AQST)*, mis à jour mensuellement. "
-            "Pour les détails sur les anomalies détectées et les corrections "
-            "appliquées, consultez le rapport qualité ci-dessous."
+            "*Régularité mensuelle TGV (AQST)*, mis à jour mensuellement."
         )
-        try:
-            report = provider.load_quality_report()
-            st.json(report)
-        except Exception:
-            logger.exception("Could not load quality report for home page")
-            st.caption("Rapport qualité non disponible.")
     st.markdown(
         '<div style="text-align:center;margin-top:40px;">'
         '<span style="font-size:0.7rem;color:#CBD5E0;">'
@@ -216,4 +202,4 @@ def _render_about(provider: DataProvider) -> None:
 
 
 # Script entry point — executed by Streamlit when this file is a st.Page target.
-render(get_provider())
+render()
