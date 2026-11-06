@@ -9,6 +9,7 @@ import logging
 
 import streamlit as st
 
+from railinsight.backend.profils_ponctualite import charger_donnees_clean
 from railinsight.interfaces.data_protocols import DataProvider
 from railinsight.ui.components.kpi_card import kpi_row
 from railinsight.ui.providers import get_provider
@@ -33,7 +34,7 @@ _QUESTIONS = [
         "Gares responsables vs victimes",
         "Quelles gares concentrent les retards ? Qui subit les cascades ?",
         "Éric",
-        None,
+        "src/railinsight/ui/pages/q2_departure_stations.py",
     ),
     (
         3,
@@ -47,7 +48,7 @@ _QUESTIONS = [
         "Score de fiabilité",
         "Score par liaison (annulations + retards) représenté sur la carte réseau.",
         "Meryem",
-        None,
+        "src/railinsight/ui/pages/q4_score_fiabilite.py",
     ),
 ]
 
@@ -93,6 +94,27 @@ def _render_hero() -> None:
     )
 
 
+@st.cache_data(show_spinner=False)
+def _charger_kpis_accueil() -> tuple[int, float, float]:
+    """Renvoie (n_liaisons, avg_late15, avg_cancel) sur les 12 derniers mois."""
+    donnees = charger_donnees_clean()
+    n_liaisons = int(donnees["liaison"].nunique())
+    par_mois = (
+        donnees.groupby("mois")
+        .agg(
+            prevus=("prevus", "sum"),
+            annules=("annules", "sum"),
+            circules=("circules", "sum"),
+            retards_sup_15min=("retards_sup_15min", "sum"),
+        )
+        .sort_values("mois")
+        .tail(12)
+    )
+    avg_late15 = float((par_mois["retards_sup_15min"] / par_mois["circules"]).mean())
+    avg_cancel = float((par_mois["annules"] / par_mois["prevus"]).mean())
+    return n_liaisons, avg_late15, avg_cancel
+
+
 def _render_network_kpis(provider: DataProvider) -> None:
     """Render 3 network-level KPI cards (last 12 months)."""
     st.markdown(
@@ -102,15 +124,10 @@ def _render_network_kpis(provider: DataProvider) -> None:
         unsafe_allow_html=True,
     )
     try:
-        network = provider.load_network_monthly()
-        monthly = provider.load_clean_monthly()
-        recent = network.tail(12)
-        n_routes = monthly["route"].nunique()
-        avg_late15 = recent["late15_rate"].mean()
-        avg_cancel = recent["cancellation_rate"].mean()
+        n_liaisons, avg_late15, avg_cancel = _charger_kpis_accueil()
         kpi_row(
             [
-                {"label": "Liaisons analysées", "value": str(n_routes)},
+                {"label": "Liaisons analysées", "value": str(n_liaisons)},
                 {
                     "label": "Retards > 15 min",
                     "value": fmt_pct(avg_late15),
