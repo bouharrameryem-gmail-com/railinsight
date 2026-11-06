@@ -18,21 +18,13 @@ import logging
 import streamlit as st
 
 from railinsight.exceptions import ErreurRailInsight, RailInsightError
-from railinsight.interfaces.data_protocols import DataProvider
 from railinsight.ui.theme.tokens import QUESTION_COLORS, SNCF_RED
 
 logger = logging.getLogger(__name__)
 
 
 class BasePage(abc.ABC):
-    """Abstract base for all RailInsight question pages.
-
-    Args:
-        provider: Data provider satisfying the DataProvider protocol.
-    """
-
-    def __init__(self, provider: DataProvider) -> None:
-        self._provider = provider
+    """Abstract base for all RailInsight question pages."""
 
     # --- Abstract properties (must be set by each subclass) ------------------
 
