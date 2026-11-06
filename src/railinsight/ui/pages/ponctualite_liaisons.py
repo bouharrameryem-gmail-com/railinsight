@@ -213,7 +213,7 @@ class PageProfilsPonctualite(BasePage):
         with onglet_profils:
             self._afficher_profils(resultats, jeu)
         with onglet_liaison:
-            self._trouver_liaison(resultats)
+            self._trouver_liaison(resultats, jeu)
 
     def _afficher_profils(self, resultats: ResultatClustering, jeu: str) -> None:
         """Cartes descriptives + nuage de points PCA."""
@@ -289,7 +289,7 @@ class PageProfilsPonctualite(BasePage):
             unsafe_allow_html=True,
         )
 
-    def _trouver_liaison(self, resultats: ResultatClustering) -> None:
+    def _trouver_liaison(self, resultats: ResultatClustering, jeu: str) -> None:
         """Permet à l'utilisateur de trouver le profil d'une liaison spécifique."""
         st.write(
             "Choisissez une liaison pour découvrir à quel profil elle appartient "
@@ -318,14 +318,16 @@ class PageProfilsPonctualite(BasePage):
         )
 
         ligne = resultats.indicateurs.loc[choisie]
+        colonnes_jeu = FEATURE_SETS.get(jeu, FEATURE_SETS[_JEU_PAR_DEFAUT])
         metriques = {
-            label: fmt_pct(float(ligne[col]))
-            for col, label in _LABELS_COLONNES.items()
+            _LABELS_COLONNES.get(col, col): fmt_pct(float(ligne[col]))
+            for col in colonnes_jeu
             if col in ligne.index and not np.isnan(float(ligne[col]))
         }
-        cols = st.columns(len(metriques))
-        for col_ui, (label, val) in zip(cols, metriques.items(), strict=False):
-            col_ui.metric(label, val)
+        if metriques:
+            cols = st.columns(len(metriques))
+            for col_ui, (label, val) in zip(cols, metriques.items(), strict=False):
+                col_ui.metric(label, val)
 
     def _render_method_box(self) -> None:
         method_box(
