@@ -38,7 +38,6 @@ jobs:
           uv python install 3.14
           uv sync --locked --all-groups
 
-      - name: PEP 8, docstring style and security rules
       - name: Ruff linting and security checks
         run: uv run ruff check .
 
