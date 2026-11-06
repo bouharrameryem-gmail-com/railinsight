@@ -9,8 +9,7 @@ HOW TO USE:
   6. Register the page in app.py (see the pages list there)
 
 RULES:
-  - No business logic here. Call backend functions via self._provider.
-  - No direct file reads. Use self._provider methods only.
+  - No business logic here. Call backend functions directly (from railinsight.backend).
   - Prefix all widget keys with self._state.widget_key("name").
   - All visible text is in French; code stays in English.
 """
@@ -19,9 +18,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from railinsight.interfaces.data_protocols import DataProvider
 from railinsight.ui.base_page import BasePage
-from railinsight.ui.providers import get_provider
 from railinsight.ui.state.base_state import PageState
 
 
@@ -31,8 +28,8 @@ class TemplatePage(BasePage):
     Delete this docstring and replace with a description of your question.
     """
 
-    def __init__(self, provider: DataProvider) -> None:
-        super().__init__(provider)
+    def __init__(self) -> None:
+        super().__init__()
         # PageState namespaces all your widget keys under "template_page__"
         self._state = PageState(page_key="template_page")
 
@@ -49,7 +46,6 @@ class TemplatePage(BasePage):
         return "Votre Nom"
 
     def _render_key_figures(self) -> None:
-        # Replace with real KPIs loaded from self._provider
         c1, c2, c3 = st.columns(3)
         c1.metric("Indicateur 1", "42")
         c2.metric("Indicateur 2", "17,3 %")
@@ -86,4 +82,4 @@ class TemplatePage(BasePage):
 
 
 # Script entry point.
-TemplatePage(get_provider()).render()
+TemplatePage().render()

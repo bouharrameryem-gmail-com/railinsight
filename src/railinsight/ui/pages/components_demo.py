@@ -13,6 +13,8 @@ import streamlit as st
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
+from railinsight.analysis.indicateurs_liaisons import construire_indicateurs_liaison
+from railinsight.backend.profils_ponctualite import charger_donnees_clean
 from railinsight.ui.components.chart_container import chart_container
 from railinsight.ui.components.data_table import data_table
 from railinsight.ui.components.filters import (
@@ -31,9 +33,41 @@ from railinsight.ui.components.warnings import (
     missing_data_warning,
     small_sample_warning,
 )
-from railinsight.ui.providers import get_provider
 from railinsight.ui.state.base_state import PageState
 from railinsight.ui.theme.tokens import CLUSTER_COLORS
+
+
+@st.cache_data(show_spinner=False)
+def _reseau_mensuel():
+    donnees = charger_donnees_clean()
+    par_mois = (
+        donnees.groupby("mois")
+        .agg(
+            circules=("circules", "sum"),
+            retards_sup_15min=("retards_sup_15min", "sum"),
+        )
+        .sort_values("mois")
+        .reset_index()
+    )
+    par_mois["late15_rate"] = par_mois["retards_sup_15min"] / par_mois["circules"]
+    return par_mois.rename(columns={"mois": "date"})
+
+
+@st.cache_data(show_spinner=False)
+def _indicateurs_liaisons():
+    donnees = charger_donnees_clean()
+    indicateurs = construire_indicateurs_liaison(
+        donnees, exclusion="known", min_months=1
+    )
+    return indicateurs.reset_index().rename(columns={"liaison": "route"})
+
+
+@st.cache_data(show_spinner=False)
+def _donnees_brutes():
+    donnees = charger_donnees_clean()
+    return donnees.drop(columns=["date"]).rename(
+        columns={"mois": "date", "liaison": "route"}
+    )
 
 
 def render() -> None:
@@ -46,18 +80,17 @@ def render() -> None:
     )
     st.divider()
 
-    provider = get_provider()
     state = PageState(page_key="components_demo")
 
     _section_kpi_cards()
     _section_insight_box()
-    _section_chart_container(provider)
-    _section_data_table(provider)
-    _section_filters(provider, state)
+    _section_chart_container()
+    _section_data_table()
+    _section_filters(state)
     _section_method_box()
     _section_warnings()
     _section_route_card()
-    _section_pca_panel(provider)
+    _section_pca_panel()
 
 
 def _section_kpi_cards() -> None:
@@ -91,20 +124,19 @@ def _section_insight_box() -> None:
     st.divider()
 
 
-def _section_chart_container(provider) -> None:
+def _section_chart_container() -> None:
     st.markdown("## `chart_container`")
     st.caption("Encapsule un graphique Plotly avec titre, guide de lecture et légende.")
 
     import plotly.express as px  # noqa: PLC0415
 
-    network = provider.load_network_monthly()
-    network["month"] = network["date"].astype(str)
+    network = _reseau_mensuel()
     fig = px.line(
         network,
-        x="month",
+        x="date",
         y="late15_rate",
         title="",
-        labels={"late15_rate": "Taux de retard > 15 min", "month": "Mois"},
+        labels={"late15_rate": "Taux de retard > 15 min", "date": "Mois"},
     )
     chart_container(
         fig,
@@ -114,19 +146,16 @@ def _section_chart_container(provider) -> None:
             "sur l'ensemble du réseau (moyenne pondérée par le trafic). "
             "Les pics correspondent aux mois exceptionnels (grèves, Covid)."
         ),
-        caption="Source : SNCF Open Data — données synthétiques pour la démo.",
+        caption="Source : SNCF Open Data.",
     )
     st.divider()
 
 
-def _section_data_table(provider) -> None:
+def _section_data_table() -> None:
     st.markdown("## `data_table`")
     st.caption("Tableau interactif avec bouton de téléchargement CSV.")
 
-    features = provider.compute_route_features(
-        provider.load_clean_monthly(),
-        min_months=1,
-    )
+    features = _indicateurs_liaisons()
     display_cols = ["route", "late15_rate", "severe_share", "n_months"]
     data_table(
         features[display_cols].round(3),
@@ -138,11 +167,11 @@ def _section_data_table(provider) -> None:
     st.divider()
 
 
-def _section_filters(provider, state: PageState) -> None:
+def _section_filters(state: PageState) -> None:
     st.markdown("## `filters`")
     st.caption("Filtres standardisés — chaque valeur est retournée par la fonction.")
 
-    monthly = provider.load_clean_monthly()
+    monthly = _donnees_brutes()
     periods = sorted(monthly["date"].unique())
     routes = sorted(monthly["route"].unique())
 
@@ -210,16 +239,13 @@ def _section_route_card() -> None:
     st.divider()
 
 
-def _section_pca_panel(provider) -> None:
+def _section_pca_panel() -> None:
     st.markdown("## `pca_panel`")
     st.caption(
         "Toujours deux graphiques : nuage des individus + cercle des corrélations."
     )
 
-    features = provider.compute_route_features(
-        provider.load_clean_monthly(),
-        min_months=1,
-    )
+    features = _indicateurs_liaisons()
     indicator_cols = [
         "late15_rate",
         "severe_share",
@@ -231,7 +257,7 @@ def _section_pca_panel(provider) -> None:
         st.warning("Pas assez de données pour la démonstration de l'ACP.")
         return
 
-    x_scaled = StandardScaler().fit_transform(df_pca.values)  # noqa: N806 (matrix)
+    x_scaled = StandardScaler().fit_transform(df_pca.values)  # noqa: N806
     fitted_pca = PCA(n_components=2, random_state=42).fit(x_scaled)
     x_transformed = fitted_pca.transform(x_scaled)
 
