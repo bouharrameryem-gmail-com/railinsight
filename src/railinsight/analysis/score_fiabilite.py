@@ -44,6 +44,7 @@ class ParametresScore:
     plafond_retard: float = 12.0
 
     def __post_init__(self) -> None:
+        """Valide le poids des annulations et les plafonds de pénalité."""
         if not isfinite(self.poids_annulations) or not 0 <= self.poids_annulations <= 1:
             raise ValueError("poids_annulations doit être compris entre 0 et 1")
         if any(

@@ -60,7 +60,7 @@ src = ["src", "tests"]   # Specify to Ruff where your project's source files are
 # E/W: pycodestyle (PEP 8), F: pyflakes, I: isort, N: naming,
 # D: pydocstyle (docstrings), UP: pyupgrade, B: bugbear,
 # S: bandit (security), ANN: type annotations
-select = ["E", "W", "F", "I", "N", "UP", "B", "S"]
+select = ["E", "W", "F", "I", "N", "UP", "B", "S", "D", "ANN"]
 # N818 : nos exceptions ont des noms français (ConfigInvalide), sans suffixe Error
 ignore = ["N818"]
 

@@ -1,3 +1,5 @@
+"""Présentation des données brutes et de leurs statistiques."""
+
 import pandas as pd
 import streamlit as st
 

@@ -96,19 +96,23 @@ class Q4ScoreFiabilitePage(BasePage):
     """Affiche le score de fiabilité sans réglages techniques."""
 
     def __init__(self) -> None:
+        """Initialise l'état propre à la page."""
         super().__init__()
         self._state = PageState(page_key="q4_score_fiabilite")
 
     @property
     def question_number(self) -> int:
+        """Renvoie le numéro de la question."""
         return 4
 
     @property
     def question_title(self) -> str:
+        """Renvoie le titre de la question."""
         return "Score de fiabilité"
 
     @property
     def author(self) -> str:
+        """Renvoie le nom de l'auteur."""
         return "Meryem"
 
     def _render_header(self) -> None:
