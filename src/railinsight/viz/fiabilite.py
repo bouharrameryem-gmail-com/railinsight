@@ -3,6 +3,8 @@
 Chaque fonction reçoit un tableau et renvoie une figure Plotly, sans appel Streamlit.
 """
 
+from typing import Protocol
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -27,7 +29,18 @@ def formater_minutes(valeur: float) -> str:
     return f"{valeur:.1f}".replace(".", ",") + " min"
 
 
-def _texte_survol(ligne) -> str:
+class _IndicateursSurvol(Protocol):
+    """Indicateurs nécessaires au survol d'une liaison."""
+
+    liaison: str
+    note: float
+    categorie: str
+    taux_annulation: float
+    retard_moyen: float
+    prevus: float
+
+
+def _texte_survol(ligne: _IndicateursSurvol) -> str:
     """Résume les indicateurs d'une liaison au survol."""
     return (
         f"{ligne.liaison}<br>Note : {ligne.note:.0f} sur 100 ({ligne.categorie})"

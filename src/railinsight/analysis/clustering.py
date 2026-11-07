@@ -71,8 +71,7 @@ def auto_select_k(
     min_cluster_size: int = 3,
     random_state: int = GRAINE,
 ) -> int:
-    """Choisit le meilleur nombre de clusters selon la silhouette,
-    sous contrainte de taille minimale."""
+    """Choisit k selon la silhouette, sous contrainte de taille minimale."""
     best_k = k_range.start
     best_sil = -1.0
     for k in k_range:

@@ -29,20 +29,24 @@ class TemplatePage(BasePage):
     """
 
     def __init__(self) -> None:
+        """Initialise l'état propre à la page."""
         super().__init__()
         # PageState namespaces all your widget keys under "template_page__"
         self._state = PageState(page_key="template_page")
 
     @property
     def question_number(self) -> int:
+        """Renvoie le numéro de la question."""
         return 0  # replace with your question number
 
     @property
     def question_title(self) -> str:
+        """Renvoie le titre de la question."""
         return "Page modèle (à remplacer)"
 
     @property
     def author(self) -> str:
+        """Renvoie le nom de l'auteur."""
         return "Votre Nom"
 
     def _render_key_figures(self) -> None:

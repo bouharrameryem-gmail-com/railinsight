@@ -1,3 +1,5 @@
+"""Chargement et agrégation des retards par gare."""
+
 from dataclasses import dataclass
 
 import pandas as pd
