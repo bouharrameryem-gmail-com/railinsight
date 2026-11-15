@@ -43,11 +43,7 @@ def ranking_chart(
         show_top_n_slider: If True, render a slider to adjust top_n interactively.
         key: Streamlit widget key for the slider (required if show_top_n_slider).
     """
-    data = (
-        df[[label_col, metric_col]]
-        .dropna()
-        .sort_values(metric_col, ascending=ascending)
-    )
+    data = df[[label_col, metric_col]].dropna().sort_values(metric_col, ascending=True)
 
     if show_top_n_slider and key:
         actual_n = st.slider(
