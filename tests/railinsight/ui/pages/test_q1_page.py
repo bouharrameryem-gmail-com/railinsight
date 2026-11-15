@@ -1,5 +1,6 @@
 """Tests de la page Streamlit Q1."""
 
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -77,3 +78,33 @@ def test_nombre_de_liaisons_est_interactif(page_q1):
     assert not page_q1.exception
     assert not page_q1.error
     assert len(page_q1.get("plotly_chart")) == 3
+
+
+def test_comparer_plusieurs_liaisons_et_choisir_la_granularite(page_q1):
+    page_q1.run()
+
+    page_q1.multiselect[0].set_value(["PARIS → LYON", "LYON → LILLE"]).run()
+    page_q1.segmented_control[0].set_value("Annuel").run()
+
+    assert not page_q1.exception
+    assert not page_q1.error
+    assert len(page_q1.get("plotly_chart")) == 3
+    comparaison = json.loads(page_q1.get("plotly_chart")[1].proto.spec)
+    assert [trace["name"] for trace in comparaison["data"][:2]] == [
+        "PARIS → LYON",
+        "LYON → LILLE",
+    ]
+
+
+def test_comparaison_vide_et_export_donnees(page_q1):
+    page_q1.run()
+    page_q1.multiselect[0].set_value([]).run()
+
+    assert not page_q1.exception
+    assert any("Choisissez au moins une liaison" in info.value for info in page_q1.info)
+
+    page_q1.multiselect[0].set_value(["PARIS → LYON"]).run()
+
+    assert not page_q1.exception
+    assert not page_q1.error
+    assert len(page_q1.get("download_button")) == 1

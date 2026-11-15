@@ -19,7 +19,7 @@ from railinsight.utils.formatting import fmt_number, fmt_pct
 from railinsight.viz.liaisons_fiabilite import (
     figure_classement_duree,
     figure_classement_liaisons,
-    figure_evolution_liaison,
+    figure_comparaison_liaisons,
 )
 
 
@@ -142,46 +142,82 @@ class Q1LiaisonsFiabilitePage(BasePage):
         regle: str,
         nombre: int,
     ) -> None:
-        """Affiche une série temporelle et compare les règles d'exclusion."""
+        """Compare plusieurs liaisons et les règles de tendance."""
         liaisons = classement.index.tolist()
         if not liaisons:
             st.info("Aucune liaison à afficher.")
             return
-        liaison = st.selectbox(
-            "Liaison à suivre",
+        liaisons_choisies = st.multiselect(
+            "Liaisons à comparer (5 maximum)",
             options=liaisons,
-            key=self._state.widget_key("liaison_evolution"),
+            default=liaisons[: min(2, len(liaisons))],
+            max_selections=5,
+            key=self._state.widget_key("liaisons_evolution"),
         )
-        pente = analyse.tendances.loc[liaison, regle]
+        pas_de_temps = st.segmented_control(
+            "Granularité",
+            options=["Mensuel", "Annuel"],
+            default="Mensuel",
+            key=self._state.widget_key("granularite"),
+        )
+        if not liaisons_choisies:
+            st.info("Choisissez au moins une liaison pour afficher la comparaison.")
+            return
+
         reseau = analyse.tendance_reseau.loc["reseau", regle]
-        tendance, reseau_colonne = st.columns(2)
-        tendance.metric(
-            "Tendance de cette liaison",
-            _formater_pente(pente),
-            help=(
-                "Pente de la régression linéaire du taux mensuel, en points "
-                "de pourcentage par an."
-            ),
-        )
-        reseau_colonne.metric(
+        st.metric(
             "Tendance du réseau",
             _formater_pente(reseau),
             help="Même méthode, calculée sur le taux mensuel agrégé du réseau.",
         )
+        tendances = analyse.tendances.loc[liaisons_choisies].rename(
+            columns=REGLES_TENDANCE
+        )
+        tendances.insert(0, "Liaison", tendances.index)
+        st.dataframe(
+            tendances.reset_index(drop=True).round(2),
+            hide_index=True,
+            width="stretch",
+        )
         chart_container(
-            figure_evolution_liaison(
+            figure_comparaison_liaisons(
                 analyse.mensuel,
-                liaison,
+                liaisons_choisies,
                 analyse.covid_debut,
                 analyse.covid_fin,
+                pas_de_temps or "Mensuel",
             ),
-            title=f"Évolution mensuelle — {liaison}",
+            title=f"Évolution {pas_de_temps.lower()} des liaisons sélectionnées",
             how_to_read=(
-                "La zone grisée correspond à la fenêtre COVID. Elle est exclue "
-                "de la tendance uniquement si cette règle est sélectionnée."
+                "Les taux annuels sont recalculés comme un ratio des sommes, "
+                "pas comme une moyenne des taux mensuels. En vue mensuelle, "
+                "la zone grisée repère la fenêtre COVID. La règle choisie "
+                "détermine les mois exclus de la pente indiquée dans le tableau."
             ),
             key=self._state.widget_key("evolution"),
         )
+        donnees = analyse.mensuel.loc[
+            analyse.mensuel["liaison"].isin(liaisons_choisies)
+        ].copy()
+        donnees["taux_incidents"] = (donnees["taux_incidents"] * 100).round(2)
+        donnees = donnees.rename(
+            columns={
+                "liaison": "Liaison",
+                "mois": "Mois",
+                "prevus": "Trains prévus",
+                "incidents": "Incidents",
+                "taux_incidents": "Taux d'incidents (%)",
+            }
+        )
+        with st.expander("Données mensuelles des liaisons sélectionnées"):
+            st.dataframe(donnees, hide_index=True, width="stretch")
+            st.download_button(
+                "Télécharger les données (CSV)",
+                data=donnees.to_csv(index=False).encode("utf-8-sig"),
+                file_name="railinsight_q1_liaisons.csv",
+                mime="text/csv",
+                key=self._state.widget_key("telecharger_donnees"),
+            )
 
         sensibilite = analyse.tendances.loc[liaisons].rename(columns=REGLES_TENDANCE)
         sensibilite.insert(0, "Liaison", sensibilite.index)

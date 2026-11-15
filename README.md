@@ -146,6 +146,14 @@ Notebooks live in `notebooks/`. Follow `notebooks/notebook_example.ipynb` for co
 and schema-validated loading. Existing notebooks are not yet fully harmonized; check each
 notebook and its methodology before comparing results.
 
+### Q1 : liaisons les moins fiables
+
+La page permet de choisir le nombre de liaisons classées, de comparer jusqu'à
+cinq évolutions côte à côte en vue mensuelle ou annuelle, et de sélectionner la
+règle d'exclusion utilisée pour lire les tendances. Les taux annuels sont des
+ratios de sommes. Les données mensuelles des liaisons sélectionnées sont
+consultables et exportables en CSV.
+
 ### Q4 : score de fiabilité
 
 La page affiche le schéma du réseau du notebook `notebooks/Q4_score_fiabilite.ipynb`.

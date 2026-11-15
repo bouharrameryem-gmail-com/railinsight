@@ -75,6 +75,69 @@ def figure_evolution_liaison(
     return figure
 
 
+def figure_comparaison_liaisons(
+    mensuel: pd.DataFrame,
+    liaisons: list[str],
+    covid_debut: str,
+    covid_fin: str,
+    pas_de_temps: str = "Mensuel",
+) -> go.Figure:
+    """Compare les taux de plusieurs liaisons à l'échelle mensuelle ou annuelle."""
+    selection = mensuel.loc[mensuel["liaison"].isin(liaisons)].copy()
+    if pas_de_temps == "Annuel":
+        selection["annee"] = selection["mois"].dt.year
+        selection = (
+            selection.groupby(["liaison", "annee"], as_index=False)
+            .agg(prevus=("prevus", "sum"), incidents=("incidents", "sum"))
+            .assign(taux_incidents=lambda table: table["incidents"] / table["prevus"])
+        )
+        selection["date_affichage"] = pd.to_datetime(
+            selection["annee"].astype(str) + "-01-01"
+        )
+        format_date = "%Y"
+    else:
+        selection["date_affichage"] = selection["mois"]
+        format_date = "%b %Y"
+
+    couleurs = ["#003F88", "#E8003D", "#2E7D32", "#FF6B35", "#6A0572"]
+    figure = go.Figure()
+    for index, liaison in enumerate(liaisons):
+        serie = selection.loc[selection["liaison"] == liaison].sort_values(
+            "date_affichage"
+        )
+        figure.add_trace(
+            go.Scatter(
+                x=serie["date_affichage"],
+                y=serie["taux_incidents"] * 100,
+                mode="lines+markers",
+                name=liaison,
+                line={"color": couleurs[index % len(couleurs)]},
+                hovertemplate=(
+                    f"{liaison}<br>%{{x|{format_date}}}"
+                    "<br>Taux : %{y:.1f} %<extra></extra>"
+                ),
+            )
+        )
+    if pas_de_temps != "Annuel":
+        figure.add_vrect(
+            x0=pd.Period(covid_debut, freq="M").start_time,
+            x1=pd.Period(covid_fin, freq="M").end_time,
+            fillcolor="#9BA3AE",
+            opacity=0.2,
+            line_width=0,
+            annotation_text="Fenêtre COVID",
+            annotation_position="top left",
+        )
+    figure.update_layout(
+        height=460,
+        margin={"l": 0, "r": 10, "t": 35, "b": 0},
+        legend={"orientation": "h", "y": -0.2},
+        xaxis={"title": ""},
+        yaxis={"title": "Trains annulés ou en retard de plus de 15 min (%)"},
+    )
+    return figure
+
+
 def figure_classement_duree(classement: pd.DataFrame) -> go.Figure:
     """Compare le taux d'incidents corrigé de la durée des liaisons."""
     choix = classement.dropna(subset=["taux_ajuste"]).copy()
