@@ -69,6 +69,7 @@ pages = [
     st.Page(
         "src/railinsight/ui/pages/q4_score_fiabilite.py",
         title="Q4: Score de fiabilité",
+        icon=":material/verified:",
     ),
 ]
 

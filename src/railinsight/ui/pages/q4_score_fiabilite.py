@@ -111,13 +111,6 @@ class Q4ScoreFiabilitePage(BasePage):
     def author(self) -> str:
         return "Meryem"
 
-    def _render_header(self) -> None:
-        titre, auteur = st.columns([8, 2])
-        with titre:
-            st.title("Q4: score de fiabilité")
-        with auteur:
-            st.caption(f"Analyse : {self.author}")
-
     def _render_key_figures(self) -> None:
         st.write(
             "Peut-on résumer les annulations et les retards en une seule note ? "
