@@ -116,8 +116,8 @@ uv run streamlit run app.py
 uv run ruff check .
 uv run ruff format --check .
 
-# Tests + coverage
-uv run pytest --cov=railinsight --cov-report=term-missing
+# Tests + branch coverage (CI requires at least 90%)
+uv run pytest --tb=short -q --cov=src/railinsight --cov-report=term-missing --cov-report=xml --cov-fail-under=90
 ```
 
 ### Configuration
