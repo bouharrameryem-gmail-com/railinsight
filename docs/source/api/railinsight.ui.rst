@@ -37,14 +37,6 @@ railinsight.ui.home\_page module
    :language: python
    :linenos:
 
-railinsight.ui.providers module
--------------------------------
-
-.. automodule:: railinsight.ui.providers
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
 Module contents
 ---------------
 

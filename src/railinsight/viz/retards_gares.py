@@ -1,12 +1,12 @@
-import pandas as pd
-import plotly.graph_objects as go
-
-from railinsight.utils.formatting import fmt_number, fmt_pct
-
 """Figures de la Q2 : gares de départ à l'origine ou victimes des retards.
 
 Chaque fonction reçoit un tableau et renvoie une figure Plotly, sans appel Streamlit.
 """
+
+import pandas as pd
+import plotly.graph_objects as go
+
+from railinsight.utils.formatting import fmt_number, fmt_pct
 
 # Orange : couleur de la Q2 ; bleu : retards hérités ; gris : causes externes.
 COULEURS_CATEGORIES = {
