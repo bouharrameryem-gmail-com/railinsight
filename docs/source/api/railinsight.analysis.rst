@@ -44,6 +44,14 @@ railinsight.analysis.lecture\_donnees module
    :show-inheritance:
    :undoc-members:
 
+railinsight.analysis.liaisons\_fiabilite module
+-----------------------------------------------
+
+.. automodule:: railinsight.analysis.liaisons_fiabilite
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 railinsight.analysis.nettoyage module
 -------------------------------------
 

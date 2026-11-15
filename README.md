@@ -46,8 +46,8 @@ See `DATASHEET.md` for full documentation of the dataset and its limitations.
 │   ├── config.py               # Paths, column mapping, constants
 │   ├── exceptions.py           # Custom exceptions
 │   ├── logging_config.py       # Two rotating file handlers + console
-│   ├── analysis/               # Data reading, cleaning, Q2 causes, Q3 clustering, Q4 score
-│   ├── backend/                # Validated data loading, Q2 and Q4 orchestration
+│   ├── analysis/               # Data reading, cleaning, Q1 reliability, Q2 causes, Q3 clustering, Q4 score
+│   ├── backend/                # Validated data loading and Q1–Q4 orchestration
 │   ├── interfaces/             # Data-provider protocols
 │   ├── adapters/               # Provider implementations
 │   ├── viz/                    # Reusable figure builders
@@ -75,9 +75,9 @@ is wired through it yet.
 
 ### `notebooks/`
 Exploration and question-specific analyses. Older notebooks often read the raw CSV directly;
-`notebook_example.ipynb` demonstrates the validated reader/configuration pattern. The Q1
-notebook uses `charger_config()`, `lire_donnees()` and `nettoyer_regularite()`. The Q1 work is
-on `analysis/question1` and has not yet been merged into `main`.
+`notebook_example.ipynb` demonstrates the validated reader/configuration pattern. The Q1 notebook and Streamlit page use `charger_config()`, `lire_donnees()` and
+`nettoyer_regularite()`. The notebook preserves the full exploratory analysis; the
+page presents its ranking, trends, sensitivity checks and duration-adjusted results.
 
 ### `railinsight.analysis`
 Feature engineering and analysis functions. The shared Parquet pipeline and model-writing
@@ -88,7 +88,7 @@ Loads schema-validated source data and orchestrates analysis for the UI.
 No Streamlit dependency; unit-tested with pytest.
 
 ### `railinsight.ui.pages`
-Contains the home page, the Q2, Q3 and Q4 pages, reusable templates, and a component demo. The target
+Contains the home page, the Q1–Q4 pages, reusable templates, and a component demo. The target
 pattern is one page entry point per analysis, delegating data work to the backend/provider.
 Shared widgets go in `ui.components`.
 
