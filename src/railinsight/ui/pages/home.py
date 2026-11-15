@@ -25,7 +25,7 @@ _QUESTIONS = [
         "Liaisons les moins fiables",
         "Quelles liaisons sont chroniquement en retard, et ça s'aggrave-t-il ?",
         "Michelle",
-        None,
+        "src/railinsight/ui/pages/q1_liaisons_fiabilite.py",
     ),
     (
         2,

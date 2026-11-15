@@ -7,8 +7,10 @@ import pytest
 from railinsight.analysis.validation_clustering import (
     _inertie,
     compare_configurations,
+    compute_ari_bootstrap,
     compute_ari_seeds,
     compute_eta2,
+    permutation_test,
     silhouette_curve,
 )
 
@@ -51,6 +53,33 @@ def test_compute_ari_seeds_stable_sur_des_groupes_nets(deux_groupes):
     assert (ari == 1.0).all()
 
 
+def test_compute_ari_bootstrap_stable_et_echantillons_trop_petits(deux_groupes):
+    ari = compute_ari_bootstrap(
+        deux_groupes, "kmeans", 2, n_iter=5, fraction=0.8, random_state=0
+    )
+    trop_petits = compute_ari_bootstrap(
+        deux_groupes, "kmeans", 2, n_iter=5, fraction=0.05, random_state=0
+    )
+
+    assert len(ari) == 5
+    assert (ari == 1.0).all()
+    assert trop_petits.empty
+
+
+def test_permutation_test_et_aucune_permutation(deux_groupes):
+    resultat = permutation_test(
+        deux_groupes, "kmeans", 2, n_permutations=3, random_state=0
+    )
+    sans_permutation = permutation_test(
+        deux_groupes, "kmeans", 2, n_permutations=0, random_state=0
+    )
+
+    assert resultat["observed_silhouette"] > 0.9
+    assert 0.0 <= resultat["p_value"] <= 1.0
+    assert np.isnan(sans_permutation["max_null_silhouette"])
+    assert np.isnan(sans_permutation["p_value"])
+
+
 def test_compute_eta2_separation_parfaite_et_variable_constante():
     features = pd.DataFrame(
         {
@@ -64,6 +93,20 @@ def test_compute_eta2_separation_parfaite_et_variable_constante():
 
     assert eta2["separe"] == pytest.approx(1.0)
     assert eta2["constante"] == 0.0
+
+
+def test_compute_eta2_ignore_variable_absente_et_signale_peu_de_valeurs():
+    features = pd.DataFrame(
+        {"incomplete": [1.0, 2.0, 3.0, 4.0, np.nan], "valide": range(5)}
+    )
+
+    eta2 = compute_eta2(
+        features, np.array([0, 0, 1, 1, 1]), ["absente", "incomplete", "valide"]
+    )
+
+    assert "absente" not in eta2
+    assert np.isnan(eta2["incomplete"])
+    assert np.isfinite(eta2["valide"])
 
 
 def test_compare_configurations_ignore_la_numerotation():
