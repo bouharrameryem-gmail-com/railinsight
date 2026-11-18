@@ -4,6 +4,14 @@ railinsight.analysis package
 Submodules
 ----------
 
+railinsight.analysis.accueil module
+-----------------------------------
+
+.. automodule:: railinsight.analysis.accueil
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 railinsight.analysis.causes\_retards module
 -------------------------------------------
 

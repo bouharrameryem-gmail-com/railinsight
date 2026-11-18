@@ -1,6 +1,43 @@
 """Tests de la carte géographique des liaisons."""
 
+import pandas as pd
+
 import railinsight.ui.components.route_map as component
+
+
+def test_carte_accueil_couleurs_coordonnees_et_survol():
+    table = pd.DataFrame(
+        {
+            "gare_a": ["PARIS LYON"] * 5 + ["INCONNUE"],
+            "gare_b": ["LYON PART DIEU"] * 6,
+            "liaison": [f"Liaison {i}" for i in range(6)],
+            "taux_incidents": [0.0, 0.1, 0.11, 0.2, 1.0, 0.5],
+            "prevus": [1000] * 6,
+            "n_mois": [12] * 6,
+        }
+    )
+    figure, manquantes = component.carte_accueil(table)
+    assert manquantes == ["Liaison 5"]
+    assert len(figure.data) == 5
+    assert [t.line.color for t in figure.data] == [
+        "#0072B2",
+        "#0072B2",
+        "#B56500",
+        "#B56500",
+        "#B32865",
+    ]
+    assert sum(t.showlegend for t in figure.data) == 3
+    assert list(figure.data[0].lat) == [48.8448, 45.7604]
+    assert list(figure.data[0].lon) == [2.3735, 4.8593]
+    assert "Mois mesurés : 12 / 12" in figure.data[0].text[0]
+    assert "100,0 %" in figure.data[4].text[0]
+    assert figure.layout.map.style == "open-street-map"
+
+
+def test_carte_accueil_vide():
+    figure, manquantes = component.carte_accueil(pd.DataFrame())
+    assert not figure.data
+    assert manquantes == []
 
 
 def test_parse_route_accepte_les_separateurs_connus():

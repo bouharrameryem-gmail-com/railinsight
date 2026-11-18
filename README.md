@@ -18,6 +18,29 @@ See `DATASHEET.md` for full documentation of the dataset and its limitations.
 
 ## Analyses
 
+### Accueil
+
+L'accueil propose une entrée directe « Explorer une liaison » et quatre parcours
+par usage. Q5 est explicitement indiquée en cours, distincte de la prévision Q1.
+Les indicateurs portent sur les **TGV nationaux** et une fenêtre calendaire de
+12 mois se terminant au dernier mois disponible, avec dates affichées.
+Le nombre de liaisons compte les paires de gares, deux sens regroupés, avec du
+trafic dans cette fenêtre. Les taux sont des **ratios de sommes** sur les seules
+lignes aux comptes appariés valides ; les exclusions sont signalées.
+Les variations en points comparent les 12 mois précédents uniquement lorsque la
+couverture mois de l'année/départ/arrivée est identique pour l'indicateur.
+Sinon, la comparaison est indiquée indisponible ; aucun mois n'est extrapolé.
+
+Une carte géographique interactive reprend cette fenêtre nationale : filtre par
+gare, zoom et détails au survol. Les deux sens sont regroupés et la couleur montre
+le ratio `(annulations + retards > 15 min) / trains prévus` sur les comptes valides.
+Les seuils 10 % et 20 % sont de simples repères visuels, pas des normes SNCF.
+Les traits relient directement les gares, sans représenter les voies réelles.
+Le référentiel local de coordonnées est partagé avec la carte Q3 ; les connexions
+non localisées sont signalées et restent dans le tableau accessible associé.
+Le fond OpenStreetMap requiert un accès réseau, sans clé API. La couverture en
+mois mesurés est indiquée pour chaque liaison ; ce taux n'est pas une prévision.
+
 | # | Question | Author / status |
 |---|---|---|
 | 1 | Which routes are least reliable, and is this worsening over time? | Michelle |

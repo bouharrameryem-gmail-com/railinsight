@@ -25,7 +25,9 @@ Usage (continuous score):
 from __future__ import annotations
 
 import logging
+from html import escape
 
+import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -154,6 +156,12 @@ _ALIASES: dict[str, str] = {
     "BORDEAUX": "BORDEAUX ST JEAN",
     "TOULOUSE": "TOULOUSE MATABIAU",
     "MONTPELLIER": "MONTPELLIER ST ROCH",
+    "MACON LOCHE": "MACON LOCHE TGV",
+    "MARNE LA VALLEE": "MARNE LA VALLEE CHESSY",
+    "METZ": "METZ VILLE",
+    "NANCY": "NANCY VILLE",
+    "ST PIERRE DES CORPS": "SAINT PIERRE DES CORPS",
+    "VALENCE ALIXAN TGV": "VALENCE TGV",
 }
 
 
@@ -178,6 +186,66 @@ def _parse_route(route: str) -> tuple[str, str] | None:
             parts = route.split(sep, 1)
             return parts[0].strip(), parts[1].strip()
     return None
+
+
+def carte_accueil(liaisons: pd.DataFrame) -> tuple[go.Figure, list[str]]:
+    """Dessine les connexions nationales et retourne les liaisons non localisées.
+
+    Réutilise le référentiel WGS84 des autres cartes sans géocodage externe.
+    Le fond OpenStreetMap requiert un accès réseau, mais aucune clé d'API.
+    Les seuils de couleur sont des repères visuels fixes, non des normes SNCF.
+    """
+    figure = go.Figure()
+    manquantes: list[str] = []
+    groupes = [
+        ("0 à 10 % d'incidents", "#0072B2", lambda t: t <= 0.1),
+        ("Plus de 10 à 20 %", "#B56500", lambda t: 0.1 < t <= 0.2),
+        ("Plus de 20 %", "#B32865", lambda t: t > 0.2),
+    ]
+    vues: set[str] = set()
+    for ligne in liaisons.itertuples(index=False):
+        depart, arrivee = _get_coords(ligne.gare_a), _get_coords(ligne.gare_b)
+        if depart is None or arrivee is None:
+            manquantes.append(ligne.liaison)
+            continue
+        nom, couleur, _ = next(
+            groupe for groupe in groupes if groupe[2](ligne.taux_incidents)
+        )
+        taux_texte = f"{ligne.taux_incidents * 100:.1f}".replace(".", ",")
+        prevus_texte = f"{ligne.prevus:,.0f}".replace(",", " ")
+        details = (
+            f"<b>{escape(ligne.liaison)}</b><br>"
+            f"Annulés ou retardés > 15 min : {taux_texte} %<br>"
+            f"Trains prévus mesurés : {prevus_texte}<br>"
+            f"Mois mesurés : {ligne.n_mois} / 12"
+        )
+        figure.add_trace(
+            go.Scattermap(
+                lat=[depart[0], arrivee[0]],
+                lon=[depart[1], arrivee[1]],
+                mode="lines+markers",
+                line={"color": couleur, "width": 3},
+                marker={"color": couleur, "size": 8},
+                name=nom,
+                legendgroup=nom,
+                showlegend=nom not in vues,
+                text=[details, details],
+                hovertemplate="%{text}<extra></extra>",
+            )
+        )
+        vues.add(nom)
+    figure.update_layout(
+        map={
+            "style": "open-street-map",
+            "center": {"lat": 46.5, "lon": 2.5},
+            "zoom": 4.3,
+        },
+        height=460,
+        margin={"l": 0, "r": 0, "t": 0, "b": 0},
+        legend={"orientation": "h", "y": -0.02, "x": 0},
+        uirevision="carte-accueil",
+    )
+    return figure, manquantes
 
 
 # ---------------------------------------------------------------------------
