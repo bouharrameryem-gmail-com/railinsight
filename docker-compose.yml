@@ -2,6 +2,7 @@ services:
   app:
     # Définir RAILINSIGHT_IMAGE dans un fichier .env (ou le passer via le pipeline)
     image: ${RAILINSIGHT_IMAGE}
+    container_name: railinsight
     ports:
       # Port externe configurable, 8501 par défaut
       - "${PORT:-8501}:${PORT:-8501}"
