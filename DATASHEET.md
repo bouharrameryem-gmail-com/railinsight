@@ -112,8 +112,11 @@ Correspondance avec les sept rubriques de Gebru et al. :
 - **Périodicité de publication** : semestrielle (selon le portail). Dernière mise à
   jour des données : 2026-10-02.
 - **Consentement** : sans objet, aucune donnée personnelle (section 7).
-- **Notre collecte** : téléchargement manuel du CSV complet depuis le portail, sans
-  filtre ni transformation.
+- **Notre collecte pour les notebooks** : téléchargement manuel du CSV complet
+  depuis le portail, sans filtre ni transformation.
+- **Collecte pour le site** : export CSV complet via l'API publique Explore v2.1
+  du même jeu, avec libellés français, sans filtre ni pagination. Le schéma est
+  contrôlé par le même lecteur que pour le CSV local.
 
 ## 4. Prétraitement / nettoyage requis
 
@@ -163,7 +166,8 @@ Le jeu de données est suffisant pour couvrir les 5 questions d'analyse du proje
   directement ; le notebook Q1 et `notebook_example.ipynb` passent par `lire_donnees()`
   et `nettoyer_regularite()` (voir section 10.3).
 - Alimentation de la webapp Streamlit via `railinsight.backend` (`charger_donnees()`),
-  puis `nettoyer_regularite()`.
+  depuis l'API SNCF, puis les nettoyages propres à chaque analyse. Les notebooks
+  conservent le CSV local, qui n'est jamais réécrit par le site.
 
 ### Usages déconseillés
 
@@ -209,6 +213,16 @@ Le jeu de données est suffisant pour couvrir les 5 questions d'analyse du proje
 - Pour rafraîchir les données avec les mois publiés après 2026-09, retélécharger le
   CSV depuis la source ci-dessus et remplacer le fichier dans `data/raw/`, puis
   suivre la procédure de la section 15.
+- Le site utilise un cache API en mémoire d'une heure, contrôlé à l'ouverture
+  ou lors d'une interaction. La barre latérale indique le dernier mois et la date
+  de récupération UTC. Un nouvel instantané invalide les calculs Streamlit.
+- En cas d'échec, le dernier jeu API validé reste utilisé avec un avertissement ;
+  nouvel essai après cinq minutes lors d'une interaction. Sans instantané en
+  mémoire (notamment après redémarrage), une erreur explicite bloque les analyses.
+  Aucun repli silencieux sur le CSV local n'est effectué.
+- Les données restent des agrégats mensuels, pas du temps réel. Les statistiques
+  chiffrées de cette datasheet décrivent le CSV figé ; le site peut différer si
+  la SNCF ajoute des mois ou révise son historique.
 
 ---
 
@@ -247,14 +261,16 @@ Le jeu de données est suffisant pour couvrir les 5 questions d'analyse du proje
 ### 10.0 Provenance : du fichier brut au jeu dérivé
 
 ```text
-CSV SNCF (data/raw/, intact)
+CSV SNCF (data/raw/, intact pour les notebooks) OU export API SNCF (site)
   → lire_donnees()          contrôle du schéma, noms propres, types numériques
   → nettoyer_regularite()   règles communes (10.1), aucune ligne retirée
   → règles D1–D10 (10.2), traitement 2025 (11), exclusions (12)
   → variables dérivées (13) → résultats Q1 à Q4 et application Streamlit actuelle
 ```
 
-Le fichier brut n'est jamais modifié : toute la chaîne est rejouable depuis lui.
+Le fichier brut n'est jamais modifié : la chaîne des notebooks reste rejouable
+depuis lui. Pour reproduire exactement un résultat du site, il faut conserver
+l'export API correspondant ; le cache actuel du site est uniquement en mémoire.
 Q5, encore en cours, ne fait pas partie de cette application ni de ses résultats
 actuels.
 

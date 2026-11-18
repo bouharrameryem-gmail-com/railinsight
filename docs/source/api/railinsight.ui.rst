@@ -29,6 +29,14 @@ railinsight.ui.pages.home module
    :language: python
    :linenos:
 
+railinsight.ui.source\_donnees module
+-------------------------------------
+
+.. automodule:: railinsight.ui.source_donnees
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 Module contents
 ---------------
 

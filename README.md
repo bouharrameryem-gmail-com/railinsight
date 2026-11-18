@@ -219,8 +219,27 @@ The project is configured for **Streamlit Cloud**.
 
 1. Push to `main`.
 2. Streamlit Cloud picks up `app.py` automatically.
-3. The application reads the tracked CSV through the configured project path. No
-   `RAILINSIGHT_DATA_PATH` secret is currently read by the code.
+3. The website downloads the complete monthly SNCF dataset through its public API.
+   Outbound HTTPS access to `ressources.data.sncf.com` is required; no API key or
+   `RAILINSIGHT_DATA_PATH` secret is needed.
+
+### Website API and reproducible notebooks
+
+- **Website (Q1–Q4 and home)**: the shared backend uses the complete
+  [CSV export API](https://ressources.data.sncf.com/api/explore/v2.1/catalog/datasets/regularite-mensuelle-tgv-aqst/exports/csv)
+  with French column labels, schema validation and a one-hour in-memory cache.
+  Expiry is checked on the next page load or interaction, not by a scheduled job.
+- The sidebar shows the latest available month and the retrieval timestamp in UTC.
+  Derived Streamlit calculation caches are cleared when a session sees a new
+  snapshot, so analyses and forecasts are recalculated from the updated source.
+- If an update fails, the last validated **API** snapshot stays available with a
+  visible warning. Another attempt is allowed after five minutes. This snapshot
+  is process-local: after a restart, API failure blocks data-dependent pages with
+  an explicit error. There is **no silent fallback to the local CSV**.
+- **Notebooks** keep the tracked CSV in `data/raw/` and their existing local read
+  paths. The website never writes this file. Results, rankings and forecast
+  horizons can therefore differ if SNCF publishes new months or revisions.
+- These are **monthly aggregate data**, not real-time train predictions.
 
 ---
 

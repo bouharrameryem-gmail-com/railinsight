@@ -11,6 +11,7 @@ Business logic and data loading belong in src/railinsight/, not here.
 import streamlit as st
 
 from railinsight.logging_config import setup_logging
+from railinsight.ui.source_donnees import afficher_source_donnees
 from railinsight.ui.theme.css import inject_global_css, sidebar_brand
 from railinsight.ui.theme.plotly_template import register_template
 
@@ -69,4 +70,6 @@ pages = [
 ]
 
 pg = st.navigation(pages)
+if not afficher_source_donnees():
+    st.stop()
 pg.run()
