@@ -328,6 +328,30 @@ Au-delà, les six parts de la ligne passent à NaN.
 
 ### 10.3 État de l'application et des analyses
 
+**Accueil orienté utilisateur** : les indicateurs affichent leur périmètre
+national et les bornes calendaires des 12 derniers mois disponibles. Le nombre
+de liaisons est limité à cette fenêtre, aux paires de gares avec trafic prévu,
+deux sens regroupés (contrairement aux liaisons orientées de Q1).
+Les taux annulations/prévus et retards > 15 min/circulés sont des ratios de sommes,
+sur les seules lignes dont les comptes sont finis, cohérents et le dénominateur
+strictement positif. Les doublons mois/départ/arrivée gardent la dernière ligne ;
+les exclusions sont journalisées et affichées. Une valeur non mesurable n'est
+pas remplacée par zéro. La variation en points compare deux fenêtres de 12 mois
+uniquement si les mesures valides ont la même couverture de mois de l'année et
+de gares orientées. Sinon, aucune variation n'est présentée. Les mois absents
+restent absents et l'historique incomplet est signalé.
+
+La carte de l'accueil utilise la même fenêtre nationale, deux sens regroupés,
+avec un ratio d'incidents `(annulations + retards > 15 min) / trains prévus`.
+Les lignes sans comptes valides sont exclues avant agrégation et journalisées ;
+une liaison entièrement annulée reste mesurable (100 % d'incidents).
+Les mois mesurés sont indiqués au survol et dans le tableau. La carte ne prédit
+pas un trajet individuel. Les seuils de couleur 10 % et 20 % sont illustratifs.
+Le référentiel WGS84 local partagé avec Q3 peut être incomplet : la couverture
+géographique et les liaisons non localisées sont signalées, sans les retirer
+du tableau associé. Les segments directs ne sont pas des tracés ferroviaires.
+Le fond géographique provient d'OpenStreetMap et nécessite un accès réseau.
+
 État vérifié le 2026-11-18 sur la branche `analysis/question1-a-jour`, sur la base du
 commit `2c1a04b` avec l'ajout local de la prévision Q1 (section 10.4).
 Q1 à Q4 sont enregistrées dans la navigation de l'application Streamlit ;
