@@ -1,0 +1,21 @@
+.git/
+.venv/
+.github/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Outils de développement
+tests/
+docs/
+notebooks/
+logs/
+
+# Données (montées en volume sur le serveur)
+data/
+
+# Fichiers sensibles et locaux
+.env
+.env.*
+*.md
+uv.lock
