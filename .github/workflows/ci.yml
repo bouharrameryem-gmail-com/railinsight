@@ -124,7 +124,7 @@ jobs:
             ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} \
             "cd ${{ secrets.REMOTE_DIR }} && \
              echo '${{ secrets.GHCR_TOKEN }}' | docker login ghcr.io -u '${{ secrets.GHCR_USER }}' --password-stdin && \
-             docker compose down railinsight && \
+             docker compose down app && \
              docker rmi -f ${IMAGE}:latest 2>/dev/null || true && \
              docker pull ${IMAGE}:latest && \
-             RAILINSIGHT_IMAGE=${IMAGE}:latest docker compose up -d railinsight"
+             RAILINSIGHT_IMAGE=${IMAGE}:latest docker compose up -d app"
