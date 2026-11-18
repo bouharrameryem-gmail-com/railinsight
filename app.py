@@ -43,11 +43,6 @@ pages = [
         icon=":material/home:",
         default=True,
     ),
-    # st.Page(
-    #     "src/railinsight/ui/pages/components_demo.py",
-    #     title="Page modèle",
-    #     icon=":material/draft:",
-    # ),
     # Q1 — Michelle
     st.Page(
         "src/railinsight/ui/pages/q1_liaisons_fiabilite.py",

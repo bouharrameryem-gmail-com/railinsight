@@ -22,18 +22,10 @@ railinsight.ui.base\_page module
    :show-inheritance:
    :undoc-members:
 
-railinsight.ui.donnees\_regularite module
------------------------------------------
-
-.. automodule:: railinsight.ui.donnees_regularite
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-railinsight.ui.home\_page module
+railinsight.ui.pages.home module
 --------------------------------
 
-.. literalinclude:: ../../../src/railinsight/ui/home_page.py
+.. literalinclude:: ../../../src/railinsight/ui/pages/home.py
    :language: python
    :linenos:
 
