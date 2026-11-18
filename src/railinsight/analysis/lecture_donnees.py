@@ -1,9 +1,10 @@
-"""Lecture et validation du fichier CSV SNCF."""
+"""Lecture et validation d'un CSV SNCF local ou de son export API en mémoire."""
 
 import logging
 import re
 import unicodedata
 from pathlib import Path
+from typing import TextIO
 
 import pandas as pd
 
@@ -34,11 +35,12 @@ def normaliser(texte: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", sans_accents).strip()
 
 
-def lire_donnees(chemin: str | Path) -> pd.DataFrame:
+def lire_donnees(chemin: str | Path | TextIO) -> pd.DataFrame:
     """Lit le CSV, vérifie son schéma et convertit les colonnes.
 
     Les colonnes renvoyées portent les noms et types définis dans SCHEMA.
     Les valeurs numériques invalides sont remplacées par NaN.
+    Accepte un chemin local (notebooks) ou un flux texte (export API du site).
     """
     brut = _lire_csv(chemin)
     en_tetes = {normaliser(nom): nom for nom in brut.columns}
@@ -57,7 +59,7 @@ def lire_donnees(chemin: str | Path) -> pd.DataFrame:
     return pd.DataFrame(colonnes)
 
 
-def _lire_csv(chemin: str | Path) -> pd.DataFrame:
+def _lire_csv(chemin: str | Path | TextIO) -> pd.DataFrame:
     """Lit le CSV en texte et traduit les erreurs de lecture."""
     try:
         return pd.read_csv(
