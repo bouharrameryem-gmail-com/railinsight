@@ -264,12 +264,6 @@ for debut in range(0, len(_QUESTIONS), 2):
             st.space("stretch")
             st.page_link(chemin, label=action, icon=icone, width="stretch")
 
-st.info(
-    "Q5 — Prédiction des retards > 15/30 min : en cours de développement. "
-    "Cette analyse n'est pas encore disponible. La prévision mensuelle "
-    "exploratoire de Q1 est un travail distinct.",
-    icon=":material/construction:",
-)
 with st.expander("Méthode, périmètre et limites"):
     st.markdown(
         "- **Source :** [SNCF Open Data — Régularité mensuelle TGV (AQST)]"
@@ -296,8 +290,7 @@ with st.expander("Le projet et l'équipe"):
         "Q1 — Michelle : fiabilité des liaisons et prévision mensuelle.  \n"
         "Q2 — Éric : retards par gare.  \n"
         "Q3 — Bachelard : profils de ponctualité.  \n"
-        "Q4 — Meryem : score de fiabilité.  \n"
-        "Q5 — Prédiction des retards : en cours."
+        "Q4 — Meryem : score de fiabilité."
     )
 st.caption(
     "Projet pédagogique indépendant ; ni service officiel SNCF ni outil temps réel."

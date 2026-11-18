@@ -57,7 +57,7 @@ def test_home_page_has_content():
     assert at.title[0].value == "Comprendre la fiabilité de votre liaison TGV"
     assert any(b.label == "Explorer une liaison" for b in at.button)
     assert len(at.get("page_link")) == 4
-    assert any("Q5" in info.value and "en cours" in info.value for info in at.info)
+    assert not at.info
     assert len(at.expander) == 3
     assert any("national" in texte.value for texte in at.markdown)
     assert any("octobre 2025" in texte.value for texte in at.markdown)

@@ -151,7 +151,7 @@ code d'analyse :
 
 ## 5. Usages prévus
 
-Le jeu de données est suffisant pour couvrir les 5 questions d'analyse du projet
+Le jeu de données est suffisant pour couvrir les 4 questions d'analyse du projet
 (voir `README.md`), chacune s'appuyant sur un sous-ensemble différent de colonnes :
 
 | # | Question | Colonnes principalement utilisées |
@@ -160,7 +160,6 @@ Le jeu de données est suffisant pour couvrir les 5 questions d'analyse du proje
 | 2 | Gares de départ : concentration de retards vs. victimes de correspondances | `Gare de départ`, `Gare d'arrivée`, `Nombre de trains en retard au départ`/`à l'arrivée`, `Retard moyen ...` |
 | 3 | Clustering des liaisons par profil de ponctualité | L'ensemble des colonnes de retard/annulation + les 6 colonnes `Prct retard pour cause ...` comme variables de profil |
 | 4 | Score de fiabilité par liaison, cartographié | `Nombre de circulations prévues`, `Nombre de trains annulés`, `Retard moyen de tous les trains à l'arrivée`, `Gare de départ`/`Gare d'arrivée` (le fichier ne contient pas la position des gares : le schéma du réseau est topologique, pas géographique) |
-| 5 | En cours — prédiction retard > 15/30 min selon mois et liaison | `Date`, `Gare de départ`/`Gare d'arrivée`, `Nombre trains en retard > 15min`/`> 30min`, `Nombre de circulations prévues` (variables explicatives) |
 
 - Exploration dans les notebooks du dossier `notebooks/` : la plupart lisent le CSV
   directement ; le notebook Q1 et `notebook_example.ipynb` passent par `lire_donnees()`
@@ -240,13 +239,12 @@ Le jeu de données est suffisant pour couvrir les 5 questions d'analyse du proje
   | Q2 | Quelles gares de départ concentrent les retards, lesquelles les subissent ? | Éric — intégrée à l'application |
   | Q3 | Peut-on regrouper les liaisons par profil de ponctualité ? | Bachelard — intégrée à l'application |
   | Q4 | Quel score de fiabilité par liaison, cartographié sur le réseau ? | Meryem — intégrée à l'application |
-  | Q5 | Peut-on prédire les retards > 15/30 min selon le mois et la liaison ? | En cours, pas encore intégrée à l'application |
 
 - **Pourquoi un jeu dérivé ?** Le fichier source contient des valeurs impossibles,
   des zéros qui masquent des valeurs manquantes et des anomalies propres à 2025
   (section 11). Les analyses Q1 à Q4 ont besoin des **mêmes** taux, calculés de la
   même façon, pour que leurs résultats soient comparables. Le jeu dérivé fixe ces
-  règles une fois pour toutes ; Q5 est encore en cours de réalisation.
+  règles une fois pour toutes.
 - **Où il vit dans le code** :
   - lecture et contrat de schéma : `src/railinsight/analysis/lecture_donnees.py` et
     `analysis/shema.py` (`SCHEMA` : noms de colonnes propres, colonnes « Commentaire »
@@ -271,8 +269,6 @@ CSV SNCF (data/raw/, intact pour les notebooks) OU export API SNCF (site)
 Le fichier brut n'est jamais modifié : la chaîne des notebooks reste rejouable
 depuis lui. Pour reproduire exactement un résultat du site, il faut conserver
 l'export API correspondant ; le cache actuel du site est uniquement en mémoire.
-Q5, encore en cours, ne fait pas partie de cette application ni de ses résultats
-actuels.
 
 **Principe** : on invalide le **champ**, pas la ligne. Une ligne qui contient une
 valeur impossible contient aussi d'autres mesures valides ; la supprimer entière
@@ -354,8 +350,7 @@ Le fond géographique provient d'OpenStreetMap et nécessite un accès réseau.
 
 État vérifié le 2026-11-18 sur la branche `analysis/question1-a-jour`, sur la base du
 commit `2c1a04b` avec l'ajout local de la prévision Q1 (section 10.4).
-Q1 à Q4 sont enregistrées dans la navigation de l'application Streamlit ;
-Q5 est en cours, mais sa page et son analyse ne sont pas encore intégrées. Cet
+Q1 à Q4 sont enregistrées dans la navigation de l'application Streamlit. Cet
 instantané décrit cette branche, pas nécessairement `main`. Les notebooks et
 l'application peuvent appliquer des méthodes différentes ; ces différences sont
 signalées ci-dessous.
@@ -366,7 +361,6 @@ signalées ci-dessous.
 | Q2 | Page intégrée : `q2_departure_stations.py` |
 | Q3 | Page intégrée : `ponctualite_liaisons.py` |
 | Q4 | Page intégrée : `q4_score_fiabilite.py` |
-| Q5 | En cours ; pas encore intégrée à la navigation Streamlit |
 
 Le tableau suivant précise les différences méthodologiques entre notebooks et
 application, d'après le code vérifié à cette date.
@@ -432,7 +426,7 @@ Conséquences des écarts :
   d'octobre à décembre 2026, et non des trois mois suivant la date du jour.
 - **Limites** : test court, faibles volumes parfois instables, aucun intervalle
   de prédiction calibré. Les grèves, la météo et les ruptures de service ne sont
-  pas anticipées. Cette extension de Q1 ne remplace pas Q5, toujours en cours.
+  pas anticipées.
 
 ## 11. Anomalies de 2025
 
@@ -665,8 +659,8 @@ Sorties prévues (chemins déclarés dans `config.py`, **pas encore produites**)
 | 2026-10-29 | 1.3 | Intégration des choix de Q2 (notebook Q2) et Q4 (notebook Q4) : périmètres, exclusions, variables, limites |
 | 2026-10-30 | 1.4 | Q1 : invalidation D4c, sensibilité de la tendance à la règle d'exclusion des mois exceptionnels |
 | 2026-11-02 | 1.5 | Resynchronisation avec `main` (`618b2e2`) : nouveaux noms de modules et de notebooks (Q1 : `Q1_liaisons_moins_fiables`) ; état réel de Q2 (2020 exclue par défaut), Q3 (9 mois dans le module, National seul) et Q4 (règle D8 dans le module) |
-| 2026-11-15 | 1.6 | Mise à jour de l'état de l'application sur `analysis/question1-a-jour` (`2c1a04b`) : Q1 à Q4 intégrées, Q1 interactive, Q5 en cours et non encore intégrée |
-| 2026-11-18 | 1.7 | Ajout local d'une prévision mensuelle exploratoire à trois mois pour Q1, partagée entre notebook et application, avec référence saisonnière et évaluation chronologique ; Q5 reste en cours |
+| 2026-11-15 | 1.6 | Mise à jour de l'état de l'application sur `analysis/question1-a-jour` (`2c1a04b`) : Q1 à Q4 intégrées, Q1 interactive |
+| 2026-11-18 | 1.7 | Ajout local d'une prévision mensuelle exploratoire à trois mois pour Q1, partagée entre notebook et application, avec référence saisonnière et évaluation chronologique |
 
 ## 16. Distribution du jeu dérivé
 
