@@ -7,10 +7,8 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   railinsight.adapters
    railinsight.analysis
    railinsight.backend
-   railinsight.interfaces
    railinsight.ui
    railinsight.utils
    railinsight.viz
