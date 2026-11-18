@@ -40,19 +40,23 @@ class Q1LiaisonsFiabilitePage(BasePage):
     """Répond à la question des liaisons les moins fiables du réseau TGV."""
 
     def __init__(self) -> None:
+        """Initialise l'état propre à la page."""
         super().__init__()
         self._state = PageState(page_key="q1_liaisons_fiabilite")
 
     @property
     def question_number(self) -> int:
+        """Renvoie le numéro de la question."""
         return 1
 
     @property
     def question_title(self) -> str:
+        """Renvoie le titre de la question."""
         return "Liaisons les moins fiables"
 
     @property
     def author(self) -> str:
+        """Renvoie le nom de l'auteur."""
         return "Michelle"
 
     def _render_key_figures(self) -> None:
