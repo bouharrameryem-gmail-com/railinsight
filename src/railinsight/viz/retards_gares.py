@@ -16,9 +16,9 @@ COULEURS_CATEGORIES = {
 }
 
 LIBELLES_CATEGORIES = {
-    "retard_heritees": "Retards hérités",
-    "retard_non_heritees": "Retards propres à la gare",
-    "retard_externes": "Retards externes",
+    "retard_heritees": "Retards importés",
+    "retard_non_heritees": "Retards nés sur place",
+    "retard_externes": "Causes extérieures",
 }
 
 # Colonne de part correspondant à chaque colonne de volume.
