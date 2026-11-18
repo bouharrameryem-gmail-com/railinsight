@@ -157,7 +157,7 @@ Le jeu de données est suffisant pour couvrir les 5 questions d'analyse du proje
 | 2 | Gares de départ : concentration de retards vs. victimes de correspondances | `Gare de départ`, `Gare d'arrivée`, `Nombre de trains en retard au départ`/`à l'arrivée`, `Retard moyen ...` |
 | 3 | Clustering des liaisons par profil de ponctualité | L'ensemble des colonnes de retard/annulation + les 6 colonnes `Prct retard pour cause ...` comme variables de profil |
 | 4 | Score de fiabilité par liaison, cartographié | `Nombre de circulations prévues`, `Nombre de trains annulés`, `Retard moyen de tous les trains à l'arrivée`, `Gare de départ`/`Gare d'arrivée` (le fichier ne contient pas la position des gares : le schéma du réseau est topologique, pas géographique) |
-| 5 | Prédiction retard > 15/30 min selon mois et liaison | `Date`, `Gare de départ`/`Gare d'arrivée`, `Nombre trains en retard > 15min`/`> 30min`, `Nombre de circulations prévues` (variables explicatives) |
+| 5 | En cours — prédiction retard > 15/30 min selon mois et liaison | `Date`, `Gare de départ`/`Gare d'arrivée`, `Nombre trains en retard > 15min`/`> 30min`, `Nombre de circulations prévues` (variables explicatives) |
 
 - Exploration dans les notebooks du dossier `notebooks/` : la plupart lisent le CSV
   directement ; le notebook Q1 et `notebook_example.ipynb` passent par `lire_donnees()`
@@ -218,22 +218,21 @@ Le jeu de données est suffisant pour couvrir les 5 questions d'analyse du proje
 
 - **Thème** : la **fiabilité** des TGV, c'est-à-dire la capacité d'une liaison à faire
   circuler les trains prévus, à l'heure.
-- **Nos 4 questions** :
+- **Nos questions** :
 
-  | # | Question | Responsable |
+  | # | Question | Responsable / état |
   |---|---|---|
-  | Q1 | Quelles liaisons sont les moins fiables, et la situation se dégrade-t-elle ? | Michelle |
-  | Q2 | Quelles gares de départ concentrent les retards, lesquelles les subissent ? | Éric |
-  | Q3 | Peut-on regrouper les liaisons par profil de ponctualité ? | Bachelard |
-  | Q4 | Quel score de fiabilité par liaison, cartographié sur le réseau ? | Meryem |
+  | Q1 | Quelles liaisons sont les moins fiables, et la situation se dégrade-t-elle ? | Michelle — intégrée à l'application |
+  | Q2 | Quelles gares de départ concentrent les retards, lesquelles les subissent ? | Éric — intégrée à l'application |
+  | Q3 | Peut-on regrouper les liaisons par profil de ponctualité ? | Bachelard — intégrée à l'application |
+  | Q4 | Quel score de fiabilité par liaison, cartographié sur le réseau ? | Meryem — intégrée à l'application |
+  | Q5 | Peut-on prédire les retards > 15/30 min selon le mois et la liaison ? | En cours, pas encore intégrée à l'application |
 
-  Le `README.md` mentionne une 5ᵉ question (prédiction des retards > 15/30 min),
-  non attribuée à ce jour.
 - **Pourquoi un jeu dérivé ?** Le fichier source contient des valeurs impossibles,
   des zéros qui masquent des valeurs manquantes et des anomalies propres à 2025
-  (section 11). Les quatre questions ont besoin des **mêmes** taux, calculés de la
+  (section 11). Les analyses Q1 à Q4 ont besoin des **mêmes** taux, calculés de la
   même façon, pour que leurs résultats soient comparables. Le jeu dérivé fixe ces
-  règles une fois pour toutes.
+  règles une fois pour toutes ; Q5 est encore en cours de réalisation.
 - **Où il vit dans le code** :
   - lecture et contrat de schéma : `src/railinsight/analysis/lecture_donnees.py` et
     `analysis/shema.py` (`SCHEMA` : noms de colonnes propres, colonnes « Commentaire »
@@ -252,10 +251,12 @@ CSV SNCF (data/raw/, intact)
   → lire_donnees()          contrôle du schéma, noms propres, types numériques
   → nettoyer_regularite()   règles communes (10.1), aucune ligne retirée
   → règles D1–D10 (10.2), traitement 2025 (11), exclusions (12)
-  → variables dérivées (13) → résultats Q1 à Q4 et application Streamlit
+  → variables dérivées (13) → résultats Q1 à Q4 et application Streamlit actuelle
 ```
 
 Le fichier brut n'est jamais modifié : toute la chaîne est rejouable depuis lui.
+Q5, encore en cours, ne fait pas partie de cette application ni de ses résultats
+actuels.
 
 **Principe** : on invalide le **champ**, pas la ligne. Une ligne qui contient une
 valeur impossible contient aussi d'autres mesures valides ; la supprimer entière
@@ -309,15 +310,30 @@ Au-delà, les six parts de la ligne passent à NaN.
 > Les volumes D4c, D6, D6b, D7b et D8 proviennent du notebook Q3. Les volumes D1,
 > D2, D4a, D4b et D7 ont été recontrôlés sur le CSV du 2026-09.
 
-### 10.3 Ce que fait chaque question aujourd'hui
+### 10.3 État de l'application et des analyses
 
-Situé au 2026-11-02, d'après le code de `main` (`618b2e2`) et les notebooks. Plusieurs
-questions existent à la fois en notebook et en module : les deux sont indiqués quand
-ils diffèrent.
+État vérifié le 2026-11-18 sur la branche `analysis/question1-a-jour`, sur la base du
+commit `2c1a04b` avec l'ajout local de la prévision Q1 (section 10.4).
+Q1 à Q4 sont enregistrées dans la navigation de l'application Streamlit ;
+Q5 est en cours, mais sa page et son analyse ne sont pas encore intégrées. Cet
+instantané décrit cette branche, pas nécessairement `main`. Les notebooks et
+l'application peuvent appliquer des méthodes différentes ; ces différences sont
+signalées ci-dessous.
+
+| Question | État dans l'application au 2026-11-18 |
+|---|---|
+| Q1 | Intégrée : classement, tendances selon trois règles d'exclusion, comparaison de jusqu'à cinq liaisons en vues mensuelle et annuelle, export CSV ; prévision mensuelle exploratoire à trois mois ajoutée localement |
+| Q2 | Page intégrée : `q2_departure_stations.py` |
+| Q3 | Page intégrée : `ponctualite_liaisons.py` |
+| Q4 | Page intégrée : `q4_score_fiabilite.py` |
+| Q5 | En cours ; pas encore intégrée à la navigation Streamlit |
+
+Le tableau suivant précise les différences méthodologiques entre notebooks et
+application, d'après le code vérifié à cette date.
 
 | Question | Source | Unité | Périmètre | Lignes retirées | Invalidations |
 |---|---|---|---|---|---|
-| Q1 — notebook `Q1_liaisons_moins_fiables` (branche `analysis/question1`, non fusionnée) | `lire_donnees` + `nettoyer_regularite` | Liaison orientée | National + International | 0 train prévu (`retirer_sans_train`) | D4c (2 mois) |
+| Q1 — application (`analysis/liaisons_fiabilite.py`, `backend/liaisons_fiabilite.py`, page `q1_liaisons_fiabilite.py`) | `charger_donnees()` puis `nettoyer_regularite()` | Liaison orientée | National + International ; flux de services additionnés par liaison et mois | Lignes sans date valide, avec 0 train prévu ou sans taux d'incident calculable | Incidents invalidés si `> 15 min` dépasse le nombre de trains circulés |
 | Q2 — notebook `Q2_gare_responsable_retard` | CSV brut | Gare de départ | **National seulement**, 2020 incluse | Aucune | Aucune |
 | Q2 — module (`causes_retards.py`, `backend/retards_gares.py`, page `q2_departure_stations`) | `charger_donnees()` (schéma validé) | Gare de départ | **National seulement**, **2020 exclue par défaut** | Lignes sans aucune part de cause | Aucune |
 | Q3 — notebook `Q3_punctuality_profiles_EDA` | CSV brut, nettoyage dans le notebook | Liaison orientée | National + International | D2 ; liaisons < 24 mois | D1 à D10 |
@@ -340,6 +356,43 @@ Conséquences des écarts :
 
 **À harmoniser** : les quatre questions devraient partir de la même sortie de
 `nettoyer_regularite()` complétée par les règles D1 à D10.
+
+### 10.4 Prévision exploratoire de fiabilité mensuelle (Q1)
+
+- **Cible** : `1 − taux d'incidents`, la part des trains prévus ni annulés ni
+  retardés de plus de 15 minutes. Affichage en pourcentage, pas de prévision
+  journalière ni de garantie pour un train individuel.
+- **Code partagé** : `analysis/prevision_fiabilite.py`, utilisé par la section 8
+  du notebook Q1 et par l'onglet « Prévision à 3 mois ». Les données sont celles de
+  l'analyse Q1, agrégées par liaison orientée et mois, tous services confondus.
+- **Interface** : la liaison principale est commune à l'évolution et à la
+  prévision. L'ouverture de l'onglet déclenche le calcul ; les autres onglets
+  ne le font pas. Trois cartes affichent les taux prévus et leur écart à la
+  référence saisonnière, sans présenter ces écarts comme une incertitude.
+  La fenêtre d'historique et la visibilité de la référence ne changent pas les
+  prévisions ni l'évaluation. Les détails et la méthode restent accessibles
+  dans des volets repliables.
+- **Éligibilité** : les 48 derniers mois doivent être valides et consécutifs
+  jusqu'au dernier mois du jeu entier. Un historique trop court, troué ou arrêté
+  avant cette date ne donne pas de prévision ; aucun mois n'est imputé.
+- **Méthodes comparées** : référence saisonnière (même mois de l'année précédente)
+  et régression Ridge (`alpha=1`) avec tendance et deux harmoniques annuelles.
+  Ridge apprend sur 36 mois au maximum, pondérés par les trains prévus. Ses sorties
+  sont bornées entre 0 et 1. Les mois exceptionnels restent inclus, indépendamment
+  du filtre utilisé pour les pentes de tendance.
+- **Validation** : quatre blocs successifs de trois mois (12 mois au total),
+  chacun prévu avec le seul passé disponible à son origine. La MAE, en points de
+  pourcentage et sans pondération des mois, choisit le modèle ; la référence est
+  retenue en cas d'égalité.
+- **Test indépendant** : les trois derniers mois sont exclus de ce choix. La MAE
+  du modèle retenu et celle de la référence sont affichées ; un avertissement
+  apparaît si le modèle fait moins bien que la référence sur ce test.
+- **Horizon** : après le test, le modèle est réentraîné sur le passé disponible
+  pour prévoir les trois mois suivants. Avec l'instantané actuel, il s'agit
+  d'octobre à décembre 2026, et non des trois mois suivant la date du jour.
+- **Limites** : test court, faibles volumes parfois instables, aucun intervalle
+  de prédiction calibré. Les grèves, la météo et les ruptures de service ne sont
+  pas anticipées. Cette extension de Q1 ne remplace pas Q5, toujours en cours.
 
 ## 11. Anomalies de 2025
 
@@ -572,6 +625,8 @@ Sorties prévues (chemins déclarés dans `config.py`, **pas encore produites**)
 | 2026-10-29 | 1.3 | Intégration des choix de Q2 (notebook Q2) et Q4 (notebook Q4) : périmètres, exclusions, variables, limites |
 | 2026-10-30 | 1.4 | Q1 : invalidation D4c, sensibilité de la tendance à la règle d'exclusion des mois exceptionnels |
 | 2026-11-02 | 1.5 | Resynchronisation avec `main` (`618b2e2`) : nouveaux noms de modules et de notebooks (Q1 : `Q1_liaisons_moins_fiables`) ; état réel de Q2 (2020 exclue par défaut), Q3 (9 mois dans le module, National seul) et Q4 (règle D8 dans le module) |
+| 2026-11-15 | 1.6 | Mise à jour de l'état de l'application sur `analysis/question1-a-jour` (`2c1a04b`) : Q1 à Q4 intégrées, Q1 interactive, Q5 en cours et non encore intégrée |
+| 2026-11-18 | 1.7 | Ajout local d'une prévision mensuelle exploratoire à trois mois pour Q1, partagée entre notebook et application, avec référence saisonnière et évaluation chronologique ; Q5 reste en cours |
 
 ## 16. Distribution du jeu dérivé
 

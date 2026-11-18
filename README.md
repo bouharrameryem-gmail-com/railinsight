@@ -1,8 +1,8 @@
-# RailInsight
+ # RailInsight
 
 Streamlit web application for exploring SNCF TGV punctuality data (open data, 2018 – present).
 
-Built as part of a data science project at Télécom Paris. The current analyses study TGV reliability from monthly route-level data; a fifth question on delay prediction is a project proposal and is not implemented yet.
+Built as part of a data science project at Télécom Paris. The current analyses study TGV reliability from monthly route-level data. A fifth question on delay prediction is in progress and is not yet integrated into the application.
 
 ---
 
@@ -18,13 +18,13 @@ See `DATASHEET.md` for full documentation of the dataset and its limitations.
 
 ## Analyses
 
-| # | Question | Author |
+| # | Question | Author / status |
 |---|---|---|
 | 1 | Which routes are least reliable, and is this worsening over time? | Michelle |
 | 2 | Which departure stations concentrate delays vs. cascade victims? | Éric |
 | **3** | **Can routes be clustered by punctuality profile?** | **Bachelard** |
 | 4 | Reliability score per route, mapped on the network | Meryem |
-| 5 | Predicting delay > 15 / 30 min from month and route | — |
+| 5 | Predicting delay > 15 / 30 min from month and route | In progress; not yet integrated |
 
 ---
 
@@ -145,11 +145,29 @@ notebook and its methodology before comparing results.
 
 ### Q1 : liaisons les moins fiables
 
-La page permet de choisir le nombre de liaisons classées, de comparer jusqu'à
-cinq évolutions côte à côte en vue mensuelle ou annuelle, et de sélectionner la
-règle d'exclusion utilisée pour lire les tendances. Les taux annuels sont des
-ratios de sommes. Les données mensuelles des liaisons sélectionnées sont
-consultables et exportables en CSV.
+La page propose une liaison principale commune à l'évolution et à la prévision,
+avec sa fiabilité observée et son volume de trains sur toute la période.
+Chaque onglet ne charge que son propre contenu et présente les contrôles qui le
+concernent. Le classement reste global ; l'évolution permet de comparer jusqu'à
+cinq liaisons en vue mensuelle ou annuelle, sur 12 mois, 24 mois ou tout
+l'historique. La fenêtre affichée ne modifie pas les pentes calculées sur toute
+la période ; une année affichée peut être partielle. Les taux annuels sont des
+ratios de sommes. Les données mensuelles sélectionnées sont exportables en CSV.
+
+L'onglet « Prévision à 3 mois » propose dès son ouverture une estimation mensuelle
+de la fiabilité d'une liaison : `100 × (1 − taux d'incidents)`. Il utilise les mêmes
+fonctions que la section 8 du notebook Q1, avec 48 mois récents consécutifs requis.
+Une régression Ridge (tendance et saisonnalité) est comparée à la référence
+« même mois de l'année précédente » sur 12 mois de validation chronologique ;
+les 3 derniers mois servent de test indépendant. Le modèle retenu est ensuite
+réentraîné pour prévoir les 3 mois suivant le dernier mois du jeu, pas la date du
+jour. Les erreurs, la référence et un export CSV sont disponibles. La prévision
+reste exploratoire, sans intervalle calibré ni estimation journalière, et
+n'anticipe pas les événements exceptionnels. Les trois estimations apparaissent
+en cartes, avec leur écart à la référence saisonnière. Le graphique permet de
+choisir 12 mois, 24 mois ou les 48 mois disponibles et de masquer la référence.
+Les valeurs détaillées et la méthode sont repliées ; un résumé de l'erreur reste
+visible. Cette extension de Q1 est distincte de Q5, toujours en cours.
 
 ### Q4 : score de fiabilité
 
