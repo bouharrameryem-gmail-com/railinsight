@@ -48,8 +48,6 @@ See `DATASHEET.md` for full documentation of the dataset and its limitations.
 │   ├── logging_config.py       # Two rotating file handlers + console
 │   ├── analysis/               # Data reading, cleaning, Q1 reliability, Q2 causes, Q3 clustering, Q4 score
 │   ├── backend/                # Validated data loading and Q1–Q4 orchestration
-│   ├── interfaces/             # Data-provider protocols
-│   ├── adapters/               # Provider implementations
 │   ├── viz/                    # Reusable figure builders
 │   ├── utils/                  # Generic helpers
 │   └── ui/
@@ -61,13 +59,12 @@ See `DATASHEET.md` for full documentation of the dataset and its limitations.
 ### Architecture
 
 ```
-app.py → ui → providers/adapters → backend → analysis
-                              └──→ viz
+app.py → ui → backend → analysis
+              └───────→ viz
 ```
 
 Streamlit belongs in the UI layer. Analysis and visualization modules should remain usable
-without Streamlit. The provider/adapters architecture is being introduced; not every analysis
-is wired through it yet.
+without Streamlit.
 
 ---
 
