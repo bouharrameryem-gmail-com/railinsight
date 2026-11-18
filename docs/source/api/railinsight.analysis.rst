@@ -60,6 +60,14 @@ railinsight.analysis.nettoyage module
    :show-inheritance:
    :undoc-members:
 
+railinsight.analysis.prevision\_fiabilite module
+------------------------------------------------
+
+.. automodule:: railinsight.analysis.prevision_fiabilite
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 railinsight.analysis.score\_fiabilite module
 --------------------------------------------
 

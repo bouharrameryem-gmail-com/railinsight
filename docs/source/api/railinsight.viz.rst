@@ -20,6 +20,14 @@ railinsight.viz.liaisons\_fiabilite module
    :show-inheritance:
    :undoc-members:
 
+railinsight.viz.prevision\_fiabilite module
+-------------------------------------------
+
+.. automodule:: railinsight.viz.prevision_fiabilite
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 railinsight.viz.retards\_gares module
 -------------------------------------
 
