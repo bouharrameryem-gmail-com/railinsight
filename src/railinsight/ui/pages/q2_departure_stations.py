@@ -46,18 +46,19 @@ from railinsight.viz.retards_gares import (
     figure_repartition_causes,
 )
 
-# Streamlit exécute la page comme un script : __name__ vaudrait "__main__"
-# et les messages échapperaient aux fichiers de log du logger "railinsight".
+
 logger = logging.getLogger("railinsight.ui.pages.q2_departure_stations")
 
 COULEUR_Q2 = QUESTION_COLORS[2]
+
+COULEUR_TEXTE_Q2 = "#C2410C"
 EXCLURE_2020_PAR_DEFAUT = True
 NOMBRE_PAR_DEFAUT = 10
 SEUIL_PAR_DEFAUT = 1000
 SEUIL_MAXIMUM = 10000
 ENSEMBLE = "Ensemble des gares"
 
-# Au-delà d'environ 75 caractères par ligne, la lecture se fatigue.
+
 LARGEUR_TEXTE = "46rem"
 POURCENTAGE = re.compile(r"\d+(?:[,.]\d+)?\s?%")
 
@@ -149,8 +150,7 @@ class Q2RetardsGaresPage(BasePage):
         """Renvoie le nom de l'auteur."""
         return "Éric"
 
-    # --- Réglages et données --------------------------------------------------
-
+    
     def _exclut_2020(self) -> bool:
         """Indique si l'utilisateur a exclu l'année 2020."""
         return bool(self._state.get("exclure_2020", EXCLURE_2020_PAR_DEFAUT))
@@ -182,7 +182,7 @@ class Q2RetardsGaresPage(BasePage):
         """Enregistre dans les logs un réglage modifié par l'utilisateur."""
         logger.info("Q2 - réglage %s = %r", nom, self._state.get(nom))
 
-    # --- Sections imposées par BasePage ---------------------------------------
+    
 
     def _render_key_figures(self) -> None:
         """Pose la question en grand, puis les chiffres clés."""
@@ -244,7 +244,7 @@ class Q2RetardsGaresPage(BasePage):
             "ponctualité, la question 4 leur donne une note sur 100."
         )
 
-    # --- Les cinq sections de l'enquête ---------------------------------------
+    
 
     def _section_grille(self, retards: RetardsParGare) -> None:
         """Pose les trois familles de causes et leur évolution."""
@@ -252,7 +252,7 @@ class Q2RetardsGaresPage(BasePage):
             1,
             "D'où vient un retard ?",
             "Un retard peut naître sur place, être importé, ou venir de l'extérieur",
-            COULEUR_Q2,
+            COULEUR_TEXTE_Q2,
         )
         _contexte(
             "La SNCF attribue chaque retard à une cause. On regroupe ces causes "
@@ -288,7 +288,7 @@ class Q2RetardsGaresPage(BasePage):
     ) -> None:
         """Nomme les gares qui fabriquent et encaissent le plus, en volume."""
         section_header(
-            2, "Qui fabrique, qui encaisse ?", titre_constat(resume), COULEUR_Q2
+            2, "Qui fabrique, qui encaisse ?", titre_constat(resume), COULEUR_TEXTE_Q2
         )
         with st.container(border=True):
             _phrase_cle(texte_constat(resume))
@@ -312,7 +312,7 @@ class Q2RetardsGaresPage(BasePage):
         self, overall: pd.DataFrame, resume: ResumeRetardsGares, nombre: int
     ) -> None:
         """Compare les gares à trafic égal, en parts de leurs propres retards."""
-        section_header(3, "Et à trafic égal ?", titre_trafic_egal(resume), COULEUR_Q2)
+        section_header(3, "Et à trafic égal ?", titre_trafic_egal(resume), COULEUR_TEXTE_Q2)
         _contexte(
             "Une gare qui compte 30 retards ne se compare pas à une gare qui en "
             "compte 30 000 : seules les gares au-dessus du seuil sont classées."
@@ -368,7 +368,7 @@ class Q2RetardsGaresPage(BasePage):
             overall, "retard_non_heritees", "retard_heritees", nombre
         )
         section_header(
-            4, "Qui est des deux côtés ?", titre_carrefours(len(croisees)), COULEUR_Q2
+            4, "Qui est des deux côtés ?", titre_carrefours(len(croisees)), COULEUR_TEXTE_Q2
         )
         if croisees.empty:
             _contexte(
@@ -417,7 +417,7 @@ class Q2RetardsGaresPage(BasePage):
             5,
             "Et votre gare ?",
             "Choisissez une gare : la page vous la raconte",
-            COULEUR_Q2,
+            COULEUR_TEXTE_Q2,
         )
         overall = retards.overall
         gares = sorted(overall["gare_depart"])
