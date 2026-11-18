@@ -177,7 +177,7 @@ def _render_question_cards() -> None:
             if page_path:
                 st.page_link(
                     page_path,
-                    label="Voir l'analyse →",
+                    label="Voir l'analyse",
                     icon=":material/arrow_forward:",
                 )
             else:
