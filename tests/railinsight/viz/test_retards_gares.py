@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from railinsight.analysis.causes_retards import DELAY_COLUMNS
+from railinsight.analysis.causes_retards import DELAY_COLUMNS, Evolution
 from railinsight.viz import retards_gares
 
 
@@ -80,7 +80,7 @@ def test_evolution_triee_dans_le_temps(evolution):
     assert len(figure.data) == 3
     assert list(figure.data[0].x) == [2019, 2021, 2022]
     assert list(figure.data[1].y) == [100.0, 200.0, 300.0]
-    assert figure.data[1].name == "Retards propres à la gare"
+    assert figure.data[1].name == "Retards nés sur place"
 
 
 def test_evolution_annuelle_graduation_entiere(evolution):
@@ -88,3 +88,54 @@ def test_evolution_annuelle_graduation_entiere(evolution):
 
     assert figure.layout.xaxis.dtick == 1
     assert figure.layout.xaxis.tickformat == "d"
+
+
+def test_classement_avec_ligne_de_moyenne():
+    classement = pd.DataFrame(
+        {"gare_depart": ["PARIS", "LYON"], "taux_heritees": [0.10, 0.05]}
+    )
+
+    figure = retards_gares.figure_classement_gares(
+        classement, "taux_heritees", "#003F88", en_part=True, reference=0.3
+    )
+
+    assert len(figure.layout.shapes) == 1
+    assert "Moyenne" in figure.layout.annotations[0].text
+    # La moyenne dépasse toutes les barres : l'axe s'élargit pour l'afficher.
+    assert figure.layout.xaxis.range[1] == pytest.approx(0.3 * 1.15)
+
+
+@pytest.fixture
+def reseau_annuel():
+    return pd.DataFrame(
+        {
+            "annee": [2020, 2019],
+            "taux_heritees": [0.3, 0.2],
+            "taux_non_heritees": [0.5, 0.6],
+            "taux_externes": [0.2, 0.2],
+        }
+    )
+
+
+def test_aire_parts_empile_les_trois_familles(reseau_annuel):
+    figure = retards_gares.figure_aire_parts(
+        reseau_annuel, Evolution(2019, 0.2, 2020, 0.3)
+    )
+
+    assert [trace.name for trace in figure.data] == [
+        "Retards importés",
+        "Retards nés sur place",
+        "Causes extérieures",
+    ]
+    assert all(trace.stackgroup == "parts" for trace in figure.data)
+    assert list(figure.data[0].x) == [2019, 2020]
+    textes = [annotation.text for annotation in figure.layout.annotations]
+    assert len(textes) == 2
+    assert textes[0].startswith("20")
+    assert textes[1].startswith("30")
+
+
+def test_aire_parts_sans_evolution(reseau_annuel):
+    figure = retards_gares.figure_aire_parts(reseau_annuel)
+
+    assert len(figure.layout.annotations) == 0

@@ -7,7 +7,6 @@ import pandas as pd
 from railinsight.analysis.nettoyage import convertir_mois, filtrer_service, taux
 from railinsight.exceptions import DonneesInvalides, InvalidSelectionError
 
-
 CAUSES_NON_HERITEES = [
     "prct_cause_infrastructure",
     "prct_cause_trafic",
@@ -27,7 +26,6 @@ MOIS_PAR_AN = 12
 MOIS_ETE = (6, 7, 8)
 NOMBRE_PIRES_MOIS = 12
 MIN_ANNEES_TENDANCE = 3
-
 
 
 def filtrer_perimetre_national(
@@ -118,7 +116,6 @@ def croiser_classements(
         valeurs et leurs deux rangs (`rang_<colonne>`), triées selon le premier
         rang. Les valeurs manquantes ne sont jamais classées.
     """
-
     rang_a = table[colonne_a].rank(ascending=False, method="first")
     rang_b = table[colonne_b].rank(ascending=False, method="first")
     dans_les_deux = (rang_a <= n) & (rang_b <= n)
@@ -127,7 +124,6 @@ def croiser_classements(
     resultat[f"rang_{colonne_a}"] = rang_a[dans_les_deux]
     resultat[f"rang_{colonne_b}"] = rang_b[dans_les_deux]
     return resultat.sort_values(f"rang_{colonne_a}").reset_index(drop=True)
-
 
 
 @dataclass(frozen=True)

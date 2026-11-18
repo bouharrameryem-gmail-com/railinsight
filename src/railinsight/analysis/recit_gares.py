@@ -96,8 +96,7 @@ def titre_carrefours(nombre: int) -> str:
 def decrire_profil(portrait: PortraitGare) -> str:
     """Situe la part de retards importés de la gare par rapport à la moyenne."""
     debut = (
-        f"À {portrait.gare}, {fmt_pct(portrait.part_heritee)} des retards "
-        "sont importés"
+        f"À {portrait.gare}, {fmt_pct(portrait.part_heritee)} des retards sont importés"
     )
     moyenne = fmt_pct(portrait.part_heritee_moyenne)
     ecart = portrait.part_heritee - portrait.part_heritee_moyenne
