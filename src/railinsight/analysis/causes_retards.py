@@ -1,3 +1,5 @@
+"""Analyse des causes de retard par gare de départ."""
+
 import pandas as pd
 
 from railinsight.analysis.nettoyage import convertir_mois, filtrer_service, taux

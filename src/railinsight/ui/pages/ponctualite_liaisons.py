@@ -79,19 +79,23 @@ class PageProfilsPonctualite(BasePage):
     """Regroupe les liaisons TGV par profil de ponctualité via K-means."""
 
     def __init__(self) -> None:
+        """Initialise l'état propre à la page."""
         super().__init__()
         self._etat = PageState(page_key="ponctualite")
 
     @property
     def question_number(self) -> int:
+        """Renvoie le numéro de la question."""
         return 3
 
     @property
     def question_title(self) -> str:
+        """Renvoie le titre de la question."""
         return "Profils de ponctualité des liaisons TGV"
 
     @property
     def author(self) -> str:
+        """Renvoie le nom de l'auteur."""
         return "Bachelard"
 
     def _render_key_figures(self) -> None:

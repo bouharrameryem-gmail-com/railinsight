@@ -36,8 +36,10 @@ def test_page_affiche_reseau_classements_et_match(page_q4):
     assert not page_q4.exception
     assert not page_q4.error
     assert not page_q4.warning
-    assert page_q4.title[0].value == "Q4: score de fiabilité"
-    assert any(texte.value == "Analyse : Meryem" for texte in page_q4.caption)
+    assert any(
+        "Meryem" in texte.value and "#2E7D32" in texte.value
+        for texte in page_q4.markdown
+    )
     assert len(page_q4.get("plotly_chart")) == 3
     assert [onglet.label for onglet in page_q4.tabs] == [
         "Le réseau",

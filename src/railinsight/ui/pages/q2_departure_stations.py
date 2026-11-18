@@ -43,19 +43,23 @@ class Q2RetardsGaresPage(BasePage):
     """Montre quelles gares concentrent les retards et lesquelles les subissent."""
 
     def __init__(self) -> None:
+        """Initialise l'état propre à la page."""
         super().__init__()
         self._state = PageState(page_key="q2_retards_gares")
 
     @property
     def question_number(self) -> int:
+        """Renvoie le numéro de la question."""
         return 2
 
     @property
     def question_title(self) -> str:
+        """Renvoie le titre de la question."""
         return "Gares responsables ou victimes des retards"
 
     @property
     def author(self) -> str:
+        """Renvoie le nom de l'auteur."""
         return "Éric"
 
     def _charger(self) -> RetardsParGare:

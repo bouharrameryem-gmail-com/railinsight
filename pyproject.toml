@@ -18,6 +18,7 @@ dependencies = [
     "requests>=2.34.2",
     "scikit-learn>=1.9.1",
     "scipy>=1.18.1",
+    "soupsieve>=4.0.0",
     "statsmodels>=0.15.0",
     "streamlit>=1.64.0",
     "tornado>=6.6.1",
@@ -60,7 +61,7 @@ src = ["src", "tests"]   # Specify to Ruff where your project's source files are
 # E/W: pycodestyle (PEP 8), F: pyflakes, I: isort, N: naming,
 # D: pydocstyle (docstrings), UP: pyupgrade, B: bugbear,
 # S: bandit (security), ANN: type annotations
-select = ["E", "W", "F", "I", "N", "UP", "B", "S"]
+select = ["E", "W", "F", "I", "N", "UP", "B", "S", "D", "ANN"]
 # N818 : nos exceptions ont des noms français (ConfigInvalide), sans suffixe Error
 ignore = ["N818"]
 

@@ -11,7 +11,6 @@ This class solves it by prefixing every key with the page name:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 import streamlit as st
 
@@ -38,7 +37,7 @@ class PageState:
         """
         return f"{self.page_key}__{name}"
 
-    def get(self, attr: str, default: Any = None) -> Any:
+    def get(self, attr: str, default: object = None) -> object:
         """Read a value stored in session state under this page's namespace.
 
         Args:
@@ -47,7 +46,7 @@ class PageState:
         """
         return st.session_state.get(self.widget_key(attr), default)
 
-    def set(self, attr: str, value: Any) -> None:
+    def set(self, attr: str, value: object) -> None:
         """Write a value to session state under this page's namespace.
 
         Args:

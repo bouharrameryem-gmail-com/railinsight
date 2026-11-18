@@ -9,6 +9,7 @@ Not listed in the main navigation by default; uncomment in app.py to activate.
 from __future__ import annotations
 
 import numpy as np
+import pandas as pd
 import streamlit as st
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
@@ -38,7 +39,7 @@ from railinsight.ui.theme.tokens import CLUSTER_COLORS
 
 
 @st.cache_data(show_spinner=False)
-def _reseau_mensuel():
+def _reseau_mensuel() -> pd.DataFrame:
     donnees = charger_donnees_clean()
     par_mois = (
         donnees.groupby("mois")
@@ -54,7 +55,7 @@ def _reseau_mensuel():
 
 
 @st.cache_data(show_spinner=False)
-def _indicateurs_liaisons():
+def _indicateurs_liaisons() -> pd.DataFrame:
     donnees = charger_donnees_clean()
     indicateurs = construire_indicateurs_liaison(
         donnees, exclusion="known", min_months=1
@@ -63,7 +64,7 @@ def _indicateurs_liaisons():
 
 
 @st.cache_data(show_spinner=False)
-def _donnees_brutes():
+def _donnees_brutes() -> pd.DataFrame:
     donnees = charger_donnees_clean()
     return donnees.drop(columns=["date"]).rename(
         columns={"mois": "date", "liaison": "route"}

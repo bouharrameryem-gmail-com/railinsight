@@ -5,6 +5,7 @@ structure (dataclasses), les types et les règles de validation.
 """
 
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass, fields, is_dataclass
 from pathlib import Path
 from typing import get_type_hints
@@ -205,7 +206,10 @@ def valider(brut: dict) -> Config:
     return Config(graine=graine, **sections)
 
 
-def charger_config(chemin=None, environ=None) -> Config:
+def charger_config(
+    chemin: str | Path | None = None,
+    environ: Mapping[str, str] | None = None,
+) -> Config:
     """Charge la configuration par défaut et applique une surcharge optionnelle."""
     environ = os.environ if environ is None else environ
     chemin = chemin or environ.get("RAILINSIGHT_CONFIG")

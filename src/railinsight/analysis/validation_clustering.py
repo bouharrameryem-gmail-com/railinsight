@@ -26,8 +26,7 @@ def silhouette_curve(
     k_range: range = range(2, 9),
     random_state: int = GRAINE,
 ) -> pd.DataFrame:
-    """Calcule les scores de silhouette,
-    Davies-Bouldin et l'inertie pour plusieurs k."""
+    """Calcule la silhouette, le score de Davies-Bouldin et l'inertie par k."""
     lignes = []
     for k in k_range:
         labels = entrainer_clustering(x_scaled, algorithm, k, random_state=random_state)
