@@ -46,7 +46,6 @@ from railinsight.viz.retards_gares import (
     figure_repartition_causes,
 )
 
-
 logger = logging.getLogger("railinsight.ui.pages.q2_departure_stations")
 
 COULEUR_Q2 = QUESTION_COLORS[2]
@@ -150,7 +149,6 @@ class Q2RetardsGaresPage(BasePage):
         """Renvoie le nom de l'auteur."""
         return "Éric"
 
-    
     def _exclut_2020(self) -> bool:
         """Indique si l'utilisateur a exclu l'année 2020."""
         return bool(self._state.get("exclure_2020", EXCLURE_2020_PAR_DEFAUT))
@@ -181,8 +179,6 @@ class Q2RetardsGaresPage(BasePage):
     def _journaliser(self, nom: str) -> None:
         """Enregistre dans les logs un réglage modifié par l'utilisateur."""
         logger.info("Q2 - réglage %s = %r", nom, self._state.get(nom))
-
-    
 
     def _render_key_figures(self) -> None:
         """Pose la question en grand, puis les chiffres clés."""
@@ -243,8 +239,6 @@ class Q2RetardsGaresPage(BasePage):
             "Et les liaisons ? La question 3 les regroupe selon leur profil de "
             "ponctualité, la question 4 leur donne une note sur 100."
         )
-
-    
 
     def _section_grille(self, retards: RetardsParGare) -> None:
         """Pose les trois familles de causes et leur évolution."""
@@ -312,7 +306,9 @@ class Q2RetardsGaresPage(BasePage):
         self, overall: pd.DataFrame, resume: ResumeRetardsGares, nombre: int
     ) -> None:
         """Compare les gares à trafic égal, en parts de leurs propres retards."""
-        section_header(3, "Et à trafic égal ?", titre_trafic_egal(resume), COULEUR_TEXTE_Q2)
+        section_header(
+            3, "Et à trafic égal ?", titre_trafic_egal(resume), COULEUR_TEXTE_Q2
+        )
         _contexte(
             "Une gare qui compte 30 retards ne se compare pas à une gare qui en "
             "compte 30 000 : seules les gares au-dessus du seuil sont classées."
@@ -368,7 +364,10 @@ class Q2RetardsGaresPage(BasePage):
             overall, "retard_non_heritees", "retard_heritees", nombre
         )
         section_header(
-            4, "Qui est des deux côtés ?", titre_carrefours(len(croisees)), COULEUR_TEXTE_Q2
+            4,
+            "Qui est des deux côtés ?",
+            titre_carrefours(len(croisees)),
+            COULEUR_TEXTE_Q2,
         )
         if croisees.empty:
             _contexte(
