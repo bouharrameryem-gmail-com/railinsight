@@ -32,7 +32,4 @@ ENV PORT=8501
 
 EXPOSE $PORT
 
-# Forme shell requise pour que $PORT soit évalué au démarrage du conteneur
-CMD ["/app/.venv/bin/streamlit", "run", "app.py", \
-    "--server.port", "$PORT", \
-    "--server.address", "0.0.0.0"]
+CMD ["/bin/sh", "-c", "/app/.venv/bin/streamlit run app.py --server.port $PORT --server.address 0.0.0.0"]
