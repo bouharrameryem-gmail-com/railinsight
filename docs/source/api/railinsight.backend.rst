@@ -4,6 +4,14 @@ railinsight.backend package
 Submodules
 ----------
 
+railinsight.backend.accueil module
+----------------------------------
+
+.. automodule:: railinsight.backend.accueil
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 railinsight.backend.dataloader module
 -------------------------------------
 
@@ -24,6 +32,14 @@ railinsight.backend.liaisons\_fiabilite module
 ----------------------------------------------
 
 .. automodule:: railinsight.backend.liaisons_fiabilite
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+railinsight.backend.profils\_ponctualite module
+-----------------------------------------------
+
+.. automodule:: railinsight.backend.profils_ponctualite
    :members:
    :show-inheritance:
    :undoc-members:

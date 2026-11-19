@@ -1,11 +1,11 @@
 railinsight.ui.components package
-================================================================
+=================================
 
 Submodules
 ----------
 
 railinsight.ui.components.chart\_container module
-----------------------------------------------------------------
+-------------------------------------------------
 
 .. automodule:: railinsight.ui.components.chart_container
    :members:
@@ -13,7 +13,7 @@ railinsight.ui.components.chart\_container module
    :undoc-members:
 
 railinsight.ui.components.kpi\_card module
-----------------------------------------------------------------
+------------------------------------------
 
 .. automodule:: railinsight.ui.components.kpi_card
    :members:
@@ -21,7 +21,7 @@ railinsight.ui.components.kpi\_card module
    :undoc-members:
 
 railinsight.ui.components.method\_box module
-----------------------------------------------------------------
+--------------------------------------------
 
 .. automodule:: railinsight.ui.components.method_box
    :members:
@@ -29,7 +29,7 @@ railinsight.ui.components.method\_box module
    :undoc-members:
 
 railinsight.ui.components.section\_header module
-----------------------------------------------------------------
+------------------------------------------------
 
 .. automodule:: railinsight.ui.components.section_header
    :members:
