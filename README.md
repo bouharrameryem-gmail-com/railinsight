@@ -1,4 +1,4 @@
- # RailInsight
+# RailInsight
 
 Streamlit web application for exploring SNCF TGV punctuality data (open data, 2018 – present).
 
@@ -14,6 +14,17 @@ Built as part of a data science project at Télécom Paris. The four analyses st
 One row = one month × one route (departure → arrival). ~13 000 rows, 2018-01 → present.
 See `DATASHEET.md` for full documentation of the dataset and its limitations.
 
+**Reference data for the landing page map** (`data/reference/`)
+
+- `gares_coordonnees.csv`: GPS coordinates of the TGV stations, written by hand with the station names used in the AQST dataset. Stations missing from this file are logged and left off the map.
+- `reseau_lgv.geojson`: simplified track of the high-speed lines, from SNCF Réseau ([Lignes LGV et par écartement](https://ressources.data.sncf.com/explore/dataset/lignes-lgv-et-par-ecartement/), ODbL licence). Regenerate it with:
+
+```bash
+uv run python scripts/telecharger_reseau_lgv.py
+```
+
+The app only reads these files: it never calls an external API at runtime.
+
 ---
 
 ## Analyses
@@ -24,6 +35,8 @@ See `DATASHEET.md` for full documentation of the dataset and its limitations.
 | 2 | Which departure stations concentrate delays vs. cascade victims? | Éric |
 | **3** | **Can routes be clustered by punctuality profile?** | **Bachelard** |
 | 4 | Reliability score per route, mapped on the network | Meryem |
+
+The landing page presents the four questions as one investigation, from the observation (Q1) to the verdict (Q4).
 
 ---
 
@@ -36,17 +49,19 @@ See `DATASHEET.md` for full documentation of the dataset and its limitations.
 ├── config/defaut.yaml          # Validated default analysis parameters
 ├── data/
 │   ├── raw/                    # Source CSV, never modified
+│   ├── reference/              # Station coordinates and LGV network (landing page map)
 │   └── processed/              # Optional prepared, cleaned Parquet data
 ├── models/                     # Trained model artefacts
 ├── notebooks/                  # Exploratory analysis (Jupyter, standalone)
-├── docs/                       # Sphinx documentation (scaffold)
+├── scripts/                    # One-off data preparation scripts
+├── docs/                       # Sphinx documentation (API reference)
 ├── logs/                       # Runtime logs (debug.log, errors.log)
 ├── src/railinsight/
 │   ├── config.py               # Paths, column mapping, constants
 │   ├── exceptions.py           # Custom exceptions
 │   ├── logging_config.py       # Two rotating file handlers + console
-│   ├── analysis/               # Data reading, cleaning, Q1 reliability, Q2 causes, Q3 clustering, Q4 score
-│   ├── backend/                # Validated data loading and Q1–Q4 orchestration
+│   ├── analysis/               # Data reading, cleaning, network indicators, Q1 reliability, Q2 causes, Q3 clustering, Q4 score
+│   ├── backend/                # Validated data loading and orchestration of the landing page and Q1–Q4
 │   ├── viz/                    # Reusable figure builders
 │   ├── utils/                  # Generic helpers
 │   └── ui/
@@ -108,12 +123,14 @@ uv sync
 # Run the app
 uv run streamlit run app.py
 
-# Lint
+# Lint and formatting
 uv run ruff check .
 uv run ruff format --check .
 
 # Tests + branch coverage (CI requires at least 90%)
 uv run pytest --tb=short -q --cov=src/railinsight --cov-report=term-missing --cov-report=xml --cov-fail-under=90
+
+uv run sphinx-build -W -b html docs/source docs/build/html
 ```
 
 ### Configuration
@@ -142,6 +159,32 @@ Notebooks live in `notebooks/`. Follow `notebooks/notebook_example.ipynb` for co
 and schema-validated loading. Existing notebooks are not yet fully harmonized; check each
 notebook and its methodology before comparing results.
 
+### Page d'accueil
+
+L'accueil pose la question commune aux quatre analyses : pourquoi votre TGV
+arrive-t-il en retard ? Le premier écran associe une phrase calculée sur les
+12 derniers mois (« 1 TGV sur N est arrivé avec plus d'un quart d'heure de
+retard ») à une carte des gares de départ. Sur la carte, la taille d'une bulle
+suit le nombre de trains et sa couleur le taux de retard de plus de 15 minutes,
+sur le tracé réel des lignes à grande vitesse. Les gares très proches, comme
+celles de Paris, sont réunies en une bulle détaillée au survol.
+
+Suivent trois chiffres repères avec leur évolution sur un an (retards,
+annulations, liaisons suivies), un calendrier des retards mois par mois et un
+sommaire des quatre analyses. Seul le service national est retenu, et les
+lignes en double du fichier SNCF ne sont comptées qu'une fois. Si les données
+manquent, chaque bloc affiche un message à sa place et le sommaire reste
+accessible.
+
+| Fichier | Rôle |
+|---|---|
+| `src/railinsight/analysis/indicateurs_reseau.py` | Taux de retard et d'annulation, fenêtres de 12 mois, gares les plus touchées |
+| `src/railinsight/analysis/geometrie.py` | Extraction et simplification du tracé des LGV |
+| `src/railinsight/backend/accueil.py` | Chargement des données, des coordonnées et du réseau |
+| `src/railinsight/viz/accueil.py` | Carte des gares et calendrier |
+| `src/railinsight/ui/pages/home.py` | Textes et mise en page |
+| `scripts/telecharger_reseau_lgv.py` | Téléchargement unique du réseau LGV |
+
 ### Q1 : liaisons les moins fiables
 
 La page propose une liaison principale commune à l'évolution et à la prévision,
@@ -167,6 +210,46 @@ en cartes, avec leur écart à la référence saisonnière. Le graphique permet 
 choisir 12 mois, 24 mois ou les 48 mois disponibles et de masquer la référence.
 Les valeurs détaillées et la méthode sont repliées ; un résumé de l'erreur reste
 visible. Cette extension de Q1 est distincte de Q5, toujours en cours.
+
+### Q2 : gares responsables ou victimes des retards
+
+La page répond à une question : quand un TGV arrive en retard, le problème
+est-il né dans sa gare de départ, ou l'a-t-il apporté d'ailleurs ? Les causes
+publiées par la SNCF sont regroupées en trois familles : retards nés sur place
+(infrastructure, gestion du trafic, matériel roulant), retards importés
+(gestion en gare et réutilisation du matériel, prise en charge des voyageurs)
+et retards venus de l'extérieur (météo, obstacles, malveillance).
+
+L'analyse se déroule en cinq sections, dont chaque titre est un constat calculé
+sur les données affichées :
+
+1. la répartition des trois familles et son évolution d'année en année ;
+2. les gares qui fabriquent et celles qui encaissent le plus de retards, en volume ;
+3. la même comparaison rapportée au trafic, pour les gares au-dessus d'un seuil
+   de retards ;
+4. les gares présentes dans les deux classements ;
+5. le portrait de la gare choisie par l'utilisateur, rédigé automatiquement selon
+   ses réglages (profil, rang, tendance et mois le plus chargé).
+
+Réglages : exclusion de 2020 (activée par défaut, les confinements faussant les
+volumes), nombre de gares par classement (5, 10 ou 15), seuil minimal de retards
+(1 000 par défaut), gare étudiée et vue par année ou par mois. Chaque changement
+de réglage est journalisé.
+
+Limites : les nombres de retards par cause sont des estimations, car la SNCF
+publie des pourcentages et non des comptes. Un retard à l'arrivée est attribué
+à la gare de départ de la liaison, ce qui est une hypothèse de lecture. Les
+tendances ne comparent que des années complètes, et seul le service national
+est étudié.
+
+| Fichier | Rôle |
+|---|---|
+| `src/railinsight/analysis/causes_retards.py` | Familles de causes, classements, croisements et portrait d'une gare |
+| `src/railinsight/analysis/recit_gares.py` | Rédaction des titres et des phrases à partir des chiffres |
+| `src/railinsight/backend/retards_gares.py` | Chargement et agrégation par gare, par année et par mois |
+| `src/railinsight/viz/retards_gares.py` | Classements, répartitions, aire empilée et évolution |
+| `src/railinsight/ui/components/section_header.py` | En-tête de section partagé avec l'accueil |
+| `src/railinsight/ui/pages/q2_departure_stations.py` | Textes, réglages et mise en page |
 
 ### Q4 : score de fiabilité
 
@@ -252,8 +335,9 @@ The project is configured for **Streamlit Cloud**.
 ## Contributing
 
 - Work on a feature branch, open a PR against `main`.
-- CI checks: ruff lint and format, pytest and a dependency audit (pip-audit). The ≥ 90 %
-  coverage gate is non-blocking and the docstring check (interrogate) is currently disabled.
+- CI checks, all blocking: ruff lint and format, docstring presence with
+  interrogate (≥ 80 %), pytest with branch coverage (≥ 90 %), a dependency audit
+  (pip-audit) and the Sphinx build with warnings treated as errors.
 - See `.github/pull_request_template.md` for the PR checklist.
 - Branch and commit conventions, including Python naming rules, are documented in the
   [project wiki](https://github.com/bouharrameryem-gmail-com/railinsight/wiki/Conventions-de-d%C3%A9veloppement).
