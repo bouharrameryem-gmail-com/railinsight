@@ -4,19 +4,14 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
-from scipy.cluster.hierarchy import linkage
 from sklearn.cluster import AgglomerativeClustering, KMeans
 from sklearn.metrics import silhouette_score
 from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import PowerTransformer, StandardScaler
 
-from railinsight.exceptions import InsufficientDataError
-
 Algorithme = Literal["kmeans", "ward", "gmm"]
 
 GRAINE = 42
-MIN_LIAISONS_CLUSTERING = 4
-_MIN_OBSERVATIONS = 2
 
 
 def mettre_a_echelle(
@@ -83,10 +78,3 @@ def auto_select_k(
             best_sil = sil
             best_k = k
     return best_k
-
-
-def calculer_liaison_ward(x_scaled: np.ndarray) -> np.ndarray:
-    """Calcule la matrice de liaison hiérarchique de Ward."""
-    if len(x_scaled) < _MIN_OBSERVATIONS:
-        raise InsufficientDataError("Le lien de Ward requiert au moins 2 observations.")
-    return linkage(x_scaled, method="ward")

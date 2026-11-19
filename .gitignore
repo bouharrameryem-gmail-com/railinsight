@@ -257,6 +257,7 @@ htmlcov/
 # --- Data: keep the folders, ignore the contents ---
 data/raw/*
 !data/raw/.gitkeep
+!data/raw/regularite-mensuelle-tgv-aqst.csv
 data/processed/*
 !data/processed/.gitkeep
 

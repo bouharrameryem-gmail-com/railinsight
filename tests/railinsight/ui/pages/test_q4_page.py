@@ -8,6 +8,7 @@ import pytest
 import streamlit as st
 from streamlit.testing.v1 import AppTest
 
+from railinsight.analysis.nettoyage import nettoyer_regularite
 from railinsight.analysis.score_fiabilite import ParametresScore
 from railinsight.backend import fiabilite
 from railinsight.utils.formatting import fmt_number
@@ -26,7 +27,11 @@ PAGE = (
 def page_q4(monkeypatch, donnees_fiabilite):
     """Affiche la page avec des données locales contrôlées."""
     st.cache_data.clear()
-    monkeypatch.setattr(fiabilite, "charger_donnees", lambda: donnees_fiabilite)
+    monkeypatch.setattr(
+        fiabilite,
+        "charger_donnees_nettoyees",
+        lambda: nettoyer_regularite(donnees_fiabilite),
+    )
     yield AppTest.from_file(str(PAGE), default_timeout=30)
     st.cache_data.clear()
 
@@ -229,7 +234,7 @@ def test_erreur_inattendue_journalisee(page_q4, monkeypatch, caplog):
     def echouer():
         raise RuntimeError("Erreur de test Q4")
 
-    monkeypatch.setattr(fiabilite, "charger_donnees", echouer)
+    monkeypatch.setattr(fiabilite, "charger_donnees_nettoyees", echouer)
     page_q4.run()
     assert not page_q4.exception
     assert page_q4.error[0].value == (

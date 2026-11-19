@@ -3,13 +3,13 @@
 import pandas as pd
 
 from railinsight.analysis.graphe_reseau import positions_gares
-from railinsight.analysis.nettoyage import filtrer_periode, nettoyer_regularite
+from railinsight.analysis.nettoyage import filtrer_periode
 from railinsight.analysis.score_fiabilite import (
     ParametresScore,
     preparer_table_score,
     scores_par_liaison,
 )
-from railinsight.backend.dataloader import charger_donnees
+from railinsight.backend.dataloader import charger_donnees_nettoyees
 from railinsight.exceptions import DonneesInvalides
 
 _PARAMETRES_PAR_DEFAUT = ParametresScore()
@@ -17,7 +17,7 @@ _PARAMETRES_PAR_DEFAUT = ParametresScore()
 
 def charger_table_score() -> pd.DataFrame:
     """Charge et prépare tous les services SNCF, comme dans le notebook."""
-    table = preparer_table_score(nettoyer_regularite(charger_donnees()))
+    table = preparer_table_score(charger_donnees_nettoyees())
     if table.empty:
         raise DonneesInvalides("Aucune donnée utilisable pour le score de fiabilité.")
     return table

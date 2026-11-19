@@ -45,12 +45,3 @@ class PageState:
             default: Value to return if the key is absent.
         """
         return st.session_state.get(self.widget_key(attr), default)
-
-    def set(self, attr: str, value: object) -> None:
-        """Write a value to session state under this page's namespace.
-
-        Args:
-            attr: Attribute name (without prefix).
-            value: Value to store.
-        """
-        st.session_state[self.widget_key(attr)] = value

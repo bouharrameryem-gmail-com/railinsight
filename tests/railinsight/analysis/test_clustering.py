@@ -1,4 +1,4 @@
-"""Tests du clustering : mise à l'échelle, algorithmes, choix de k et lien de Ward."""
+"""Tests du clustering : mise à l'échelle, algorithmes et choix de k."""
 
 import numpy as np
 import pandas as pd
@@ -6,11 +6,9 @@ import pytest
 
 from railinsight.analysis.clustering import (
     auto_select_k,
-    calculer_liaison_ward,
     entrainer_clustering,
     mettre_a_echelle,
 )
-from railinsight.exceptions import InsufficientDataError
 
 
 @pytest.fixture
@@ -47,12 +45,3 @@ def test_scale_features_centre_et_reduit():
 
     assert x_scaled.mean(axis=0) == pytest.approx([0.0, 0.0])
     assert x_scaled.std(axis=0) == pytest.approx([1.0, 1.0])
-
-
-def test_calculer_liaison_ward_forme(deux_groupes):
-    assert calculer_liaison_ward(deux_groupes).shape == (39, 4)
-
-
-def test_calculer_liaison_ward_une_seule_observation():
-    with pytest.raises(InsufficientDataError):
-        calculer_liaison_ward(np.array([[1.0, 2.0]]))

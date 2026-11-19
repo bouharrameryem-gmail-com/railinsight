@@ -1,4 +1,4 @@
-"""Figures du score de fiabilité : schéma du réseau, classement, nuage et évolution.
+"""Figures du score de fiabilité : schéma du réseau et classement.
 
 Chaque fonction reçoit un tableau et renvoie une figure Plotly, sans appel Streamlit.
 """
@@ -169,48 +169,4 @@ def figure_classement(
         height=35 * len(choix) + 120,
         yaxis={"categoryorder": "array", "categoryarray": choix.iloc[::-1]["liaison"]},
     )
-    return figure
-
-
-def figure_annulations_retards(liaisons: pd.DataFrame) -> go.Figure:
-    """Compare les annulations et le retard moyen de chaque liaison."""
-    figure = px.scatter(
-        liaisons,
-        x="taux_annulation",
-        y="retard_moyen",
-        color="categorie",
-        color_discrete_map=COULEURS_CATEGORIES,
-        category_orders={"categorie": NOMS_CATEGORIES},
-        size="prevus",
-        size_max=25,
-        hover_name="liaison",
-        hover_data={
-            "note": ":.0f",
-            "taux_annulation": ":.1%",
-            "retard_moyen": ":.1f",
-            "prevus": True,
-            "categorie": False,
-        },
-        labels={
-            "taux_annulation": "Trains supprimés (part des trains prévus)",
-            "retard_moyen": "Retard moyen à l'arrivée (minutes)",
-            "categorie": "Catégorie",
-        },
-    )
-    figure.update_xaxes(tickformat=".0%")
-    figure.update_layout(height=520)
-    return figure
-
-
-def figure_evolution(par_mois: pd.DataFrame) -> go.Figure:
-    """Note mois par mois (résultat de `scores_par_mois`)."""
-    figure = px.line(
-        par_mois,
-        x="mois",
-        y="note",
-        markers=True,
-        labels={"mois": "Mois", "note": "Note sur 100"},
-    )
-    figure.update_yaxes(range=[0, 100])
-    figure.update_layout(height=380)
     return figure

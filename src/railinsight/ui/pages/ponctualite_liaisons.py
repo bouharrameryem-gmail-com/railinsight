@@ -10,9 +10,9 @@ import plotly.express as px
 import streamlit as st
 
 from railinsight.analysis.indicateurs_liaisons import FEATURE_SETS
+from railinsight.backend.dataloader import charger_donnees_clean
 from railinsight.backend.profils_ponctualite import (
     ResultatClustering,
-    charger_donnees_clean,
     clusteriser,
     construire_indicateurs,
 )

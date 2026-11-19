@@ -34,7 +34,7 @@ from railinsight.ui.components.chart_container import chart_container
 from railinsight.ui.components.method_box import method_box
 from railinsight.ui.components.section_header import section_header
 from railinsight.ui.state.base_state import PageState
-from railinsight.ui.theme.tokens import GRAY_700, QUESTION_COLORS
+from railinsight.ui.theme.tokens import GRAY_700
 from railinsight.utils.formatting import fmt_month, fmt_number, fmt_pct
 from railinsight.viz.retards_gares import (
     COULEURS_CATEGORIES,
@@ -47,8 +47,6 @@ from railinsight.viz.retards_gares import (
 )
 
 logger = logging.getLogger("railinsight.ui.pages.q2_departure_stations")
-
-COULEUR_Q2 = QUESTION_COLORS[2]
 
 COULEUR_TEXTE_Q2 = "#C2410C"
 EXCLURE_2020_PAR_DEFAUT = True
