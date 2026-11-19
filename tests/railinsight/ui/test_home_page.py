@@ -7,7 +7,6 @@ import pytest
 import streamlit as st
 from streamlit.testing.v1 import AppTest
 
-from railinsight.analysis.liaisons_fiabilite import calculer_analyse_liaisons_fiabilite
 from railinsight.exceptions import DonneesInvalides
 
 # st.page_link requires st.navigation context, so tests must run through the
@@ -54,9 +53,7 @@ def test_home_page_renders():
 def test_home_page_has_content():
     at = AppTest.from_file(str(_ROOT / "app.py"), default_timeout=30)
     at.run()
-    assert at.title[0].value == "Comprendre la fiabilité de votre liaison TGV"
-    assert any(b.label == "Explorer une liaison" for b in at.button)
-    assert len(at.get("page_link")) == 4
+    assert at.title[0].value == "Comprendre la ponctualité et la fiabilité des TGV"
     assert not at.info
     assert len(at.expander) == 3
     assert any("national" in texte.value for texte in at.markdown)
@@ -114,25 +111,25 @@ def test_variations_en_points_sur_perimetre_comparable():
     assert not any("Évolution non disponible" in c.value for c in at.caption)
 
 
-def test_action_principale_ouvre_q1(monkeypatch):
-    donnees = donnees_accueil().assign(duree_moyenne=90)
-    donnees["date"] = pd.to_datetime(donnees["mois"])
-    analyse = calculer_analyse_liaisons_fiabilite(
-        donnees, covid_debut="2020-03", covid_fin="2021-06"
-    )
-    monkeypatch.setattr(
-        "railinsight.backend.liaisons_fiabilite.charger_analyse_liaisons_fiabilite",
-        lambda: analyse,
-    )
+def test_quatre_analyses_presentees_avant_le_bilan_et_la_carte():
     at = AppTest.from_file(str(_ROOT / "app.py"), default_timeout=30).run()
-    at.button[0].click().run()
     assert not at.exception
-    assert [widget.label for widget in at.selectbox] == ["Votre liaison"]
-    assert [onglet.label for onglet in at.tabs] == [
-        "Classement",
-        "Évolution et tendances",
-        "À durée égale",
-        "Prévision à 3 mois",
+    assert not at.main.button
+    liens = [(lien.proto.label, lien.proto.page) for lien in at.get("page_link")]
+    assert liens == [
+        ("Comparer les liaisons et leurs tendances", "q1_liaisons_fiabilite"),
+        ("Explorer les retards par gare", "q2_departure_stations"),
+        ("Découvrir les profils de ponctualité", "ponctualite_liaisons"),
+        ("Consulter les scores de fiabilité", "q4_score_fiabilite"),
+    ]
+    assert [
+        element.type
+        for element in at.main
+        if element.type in {"page_link", "metric", "plotly_chart"}
+    ] == [
+        *["page_link"] * 4,
+        *["metric"] * 3,
+        "plotly_chart",
     ]
 
 

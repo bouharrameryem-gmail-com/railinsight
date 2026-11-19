@@ -17,7 +17,6 @@ from railinsight.ui.components.route_map import carte_accueil
 from railinsight.utils.formatting import fmt_month, fmt_number, fmt_pct
 
 logger = logging.getLogger(__name__)
-_Q1 = "src/railinsight/ui/pages/q1_liaisons_fiabilite.py"
 _QUESTIONS = [
     (
         "Comparer les liaisons",
@@ -25,7 +24,7 @@ _QUESTIONS = [
         "explorez une prévision mensuelle à trois mois.",
         "Comparer les liaisons et leurs tendances",
         ":material/trending_up:",
-        _Q1,
+        "src/railinsight/ui/pages/q1_liaisons_fiabilite.py",
     ),
     (
         "Comprendre les retards",
@@ -236,23 +235,14 @@ def _afficher_bilan() -> None:
 
 
 st.caption("RAILINSIGHT · PROJET TÉLÉCOM PARIS · SNCF OPEN DATA")
-st.title("Comprendre la fiabilité de votre liaison TGV")
+st.title("Comprendre la ponctualité et la fiabilité des TGV")
 st.write(
-    "Comparez les liaisons, comprenez les retards et explorez les tendances "
-    "à partir des statistiques mensuelles de la SNCF."
+    "RailInsight propose quatre analyses pour comprendre les retards et les "
+    "annulations, à l’échelle des gares, des liaisons et du réseau TGV."
 )
-with st.container(horizontal=True, vertical_alignment="center"):
-    if st.button(
-        "Explorer une liaison",
-        icon=":material/search:",
-        type="primary",
-    ):
-        st.switch_page(_Q1)
-    st.caption("Données mensuelles · pas de suivi des trains en temps réel")
+st.caption("Statistiques mensuelles de la SNCF · pas de suivi en temps réel")
 
-_afficher_bilan()
-_afficher_carte()
-st.header("Que souhaitez-vous explorer ?")
+st.header("Les quatre analyses du projet")
 for debut in range(0, len(_QUESTIONS), 2):
     colonnes = st.columns(2, gap="medium")
     for colonne, (titre, texte, action, icone, chemin) in zip(
@@ -263,6 +253,9 @@ for debut in range(0, len(_QUESTIONS), 2):
             st.write(texte)
             st.space("stretch")
             st.page_link(chemin, label=action, icon=icone, width="stretch")
+
+_afficher_bilan()
+_afficher_carte()
 
 with st.expander("Méthode, périmètre et limites"):
     st.markdown(

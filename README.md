@@ -20,8 +20,8 @@ See `DATASHEET.md` for full documentation of the dataset and its limitations.
 
 ### Accueil
 
-L'accueil propose une entrée directe « Explorer une liaison » et quatre parcours
-par usage, dont la prévision mensuelle exploratoire de Q1.
+L'accueil présente les quatre analyses au même niveau, avant le bilan du réseau
+et la carte.
 Les indicateurs portent sur les **TGV nationaux** et une fenêtre calendaire de
 12 mois se terminant au dernier mois disponible, avec dates affichées.
 Le nombre de liaisons compte les paires de gares, deux sens regroupés, avec du
