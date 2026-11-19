@@ -28,12 +28,7 @@ from railinsight.backend.accueil import (
 )
 from railinsight.exceptions import ErreurRailInsight, RailInsightError
 from railinsight.ui.components.section_header import COULEUR_FILET, section_header
-from railinsight.ui.theme.tokens import (
-    COLOR_RELIABLE,
-    GRAY_700,
-    GRAY_900,
-    SNCF_RED,
-)
+from railinsight.ui.theme.tokens import GRAY_700, GRAY_900, SNCF_RED
 from railinsight.utils.formatting import fmt_month, fmt_number
 from railinsight.viz.accueil import figure_calendrier, figure_carte_gares, nom_gare
 
@@ -46,6 +41,8 @@ T = TypeVar("T")
 LARGEUR_TEXTE = "46rem"
 # En dessous de 0,1 point d'écart sur un an, on parle de stabilité.
 ECART_STABLE = 0.1
+# Vert d'une baisse des retards, lisible sur fond blanc (contraste d'environ 5:1).
+COULEUR_BAISSE = "#2E7D32"
 LIEN_DONNEES = (
     "https://ressources.data.sncf.com/explore/dataset/regularite-mensuelle-tgv-aqst/"
 )
@@ -152,7 +149,7 @@ def _evolution(courant: float, precedent: float | None) -> tuple[str, str]:
     points = fmt_number(abs(ecart), decimals=1)
     if ecart > 0:
         return f"En hausse de {points} point sur un an", SNCF_RED
-    return f"En baisse de {points} point sur un an", COLOR_RELIABLE
+    return f"En baisse de {points} point sur un an", COULEUR_BAISSE
 
 
 class PageAccueil:

@@ -1,12 +1,14 @@
 """Indicateurs du réseau TGV pour la page d'accueil.
 """
 
+import logging
 from dataclasses import dataclass
 
 import pandas as pd
 
-from railinsight.analysis.nettoyage import retirer_doublons, retirer_sans_train
 from railinsight.exceptions import DonneesInvalides
+
+logger = logging.getLogger(__name__)
 
 MOIS_PAR_FENETRE = 12
 CLE_LIGNE = ["mois", "gare_depart", "gare_arrivee"]
@@ -61,7 +63,8 @@ def preparer_donnees(nettoyees: pd.DataFrame) -> pd.DataFrame:
     """Retire les doublons et les lignes sans train prévu.
 
     Le fichier SNCF contient des lignes en double (été 2025) : sans ce
-    filtre, ces mois compteraient deux fois dans les totaux du réseau.
+    filtre, ces mois compteraient deux fois dans les totaux du réseau. Pour
+    chaque doublon, la dernière ligne publiée est conservée.
 
     Raises:
         DonneesInvalides: Si une colonne nécessaire manque.
@@ -71,7 +74,17 @@ def preparer_donnees(nettoyees: pd.DataFrame) -> pd.DataFrame:
         raise DonneesInvalides(
             "colonnes manquantes pour l'accueil : " + ", ".join(manquantes)
         )
-    return retirer_sans_train(retirer_doublons(nettoyees, CLE_LIGNE))
+    uniques = nettoyees.drop_duplicates(subset=CLE_LIGNE, keep="last")
+    doublons = len(nettoyees) - len(uniques)
+    avec_train = uniques[uniques["prevus"] > 0]
+    sans_train = len(uniques) - len(avec_train)
+    if doublons or sans_train:
+        logger.info(
+            "Accueil : %d doublon(s) et %d ligne(s) sans train écartés",
+            doublons,
+            sans_train,
+        )
+    return avec_train.reset_index(drop=True)
 
 
 def fenetres_annuelles(

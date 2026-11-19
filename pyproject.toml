@@ -13,6 +13,7 @@ dependencies = [
     "numpy>=2.5.3",
     "pandas>=3.0.6",
     "plotly>=7.1.0",
+    "pyarrow>=25.0.0",
     "pydeck>=0.9.3",
     "pyyaml>=6.0.3",
     "requests>=2.34.2",
@@ -23,9 +24,6 @@ dependencies = [
     "streamlit>=1.64.0",
     "tornado>=6.6.1",
 ]
-
-[project.scripts]
-railinsight = "railinsight:main"
 
 [build-system]
 requires = ["uv_build>=0.12.10,<0.13.0"]

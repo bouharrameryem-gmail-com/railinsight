@@ -8,8 +8,19 @@ from streamlit.testing.v1 import AppTest
 
 from railinsight.exceptions import DonneesInvalides
 
-
+# st.switch_page et st.page_link exigent le contexte de st.navigation :
+# les tests passent donc par le point d'entrée complet (app.py).
 APP = Path(__file__).parents[3] / "app.py"
+
+
+@pytest.fixture(autouse=True)
+def source_hors_reseau(monkeypatch):
+    """Garde les tests de l'accueil indépendants de la disponibilité de SNCF."""
+
+    def interdire_reseau(*args, **kwargs):
+        raise AssertionError("L'accueil ne doit pas télécharger les données.")
+
+    monkeypatch.setattr("requests.get", interdire_reseau)
 
 
 @pytest.fixture
@@ -34,6 +45,16 @@ def _espaces(texte):
 
 def _texte(page, morceau):
     return any(morceau in _espaces(bloc.value) for bloc in page.markdown)
+
+
+def test_home_page_renders():
+    """L'application complète s'affiche avec les vraies données du dépôt."""
+    st.cache_data.clear()
+    at = AppTest.from_file(str(APP), default_timeout=30)
+    at.run()
+    assert not at.exception
+    assert not at.error
+    assert "CSV local" in at.sidebar.caption[0].value
 
 
 def test_accueil_raconte_le_reseau(accueil):

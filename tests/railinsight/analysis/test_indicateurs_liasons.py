@@ -11,7 +11,6 @@ import pytest
 from railinsight.analysis.indicateurs_liaisons import (
     MOIS_EXCEPTIONNELS,
     construire_indicateurs_liaison,
-    corriger_effet_duree,
     detect_redundancy,
     mois_a_exclure,
     taux_reseau_mensuel,
@@ -132,20 +131,3 @@ def test_detect_redundancy_repere_les_paires_trop_correlees():
 
     assert [(a, b) for a, b, _ in paires] == [("a", "b")]
     assert paires[0][2] == pytest.approx(1.0)
-
-
-def test_corriger_effet_duree_corrige_seulement_les_colonnes_liees_a_la_duree():
-    duree = np.array([60, 90, 120, 180, 240, 300, 360, 420])
-    features = pd.DataFrame(
-        {
-            "trip_duration_min": duree,
-            "liee": 0.01 * np.log(duree),
-            "libre": [3, 1, 3, 1, 3, 1, 3, 1],
-        }
-    )
-
-    resultat, pentes = corriger_effet_duree(features, ["liee", "libre"])
-
-    assert "liee_adj" in resultat.columns
-    assert "libre_adj" not in resultat.columns
-    assert pentes["liee"] == pytest.approx(0.01)

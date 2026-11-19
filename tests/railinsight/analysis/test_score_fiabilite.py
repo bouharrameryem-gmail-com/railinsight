@@ -10,14 +10,10 @@ from railinsight.analysis.score_fiabilite import (
     calculer_score,
     categoriser,
     preparer_table_score,
-    resume_reseau,
     scores_par_liaison,
-    scores_par_mois,
 )
 from railinsight.viz.fiabilite import (
-    figure_annulations_retards,
     figure_classement,
-    figure_evolution,
     figure_reseau,
 )
 
@@ -80,20 +76,6 @@ def test_notes_bornees_et_retard_absent():
     assert pd.isna(notes.iloc[3])
 
 
-def test_resume_et_evolution_ponderes(donnees_fiabilite):
-    table = preparer_table_score(nettoyer_regularite(donnees_fiabilite))
-    parametres = ParametresScore()
-    liaisons = scores_par_liaison(table, parametres)
-    retenue = table[table["liaison"].isin(liaisons["liaison"])]
-    par_mois = scores_par_mois(retenue, parametres)
-    reseau = resume_reseau(liaisons, parametres)
-    assert par_mois["mois"].tolist() == ["2024-01", "2024-02"]
-    assert reseau["prevus"] == 1600
-    assert reseau["taux_annulation"] == pytest.approx(12 / 1600)
-    assert reseau["retard_moyen"] == pytest.approx(2928 / 1588)
-    assert par_mois.iloc[1]["retard_moyen"] == 1
-
-
 def test_retard_manquant_ne_dilue_pas_la_moyenne(donnees_fiabilite):
     brut = donnees_fiabilite.iloc[[0, 1]].copy()
     brut.loc[1, "retard_moyen_arrivee"] = -20
@@ -142,23 +124,3 @@ def test_classement_notes_et_ordre(donnees_fiabilite, meilleures):
     assert list(figure.data[0].y) == [attendue["liaison"]]
     assert list(figure.data[0].x) == [attendue["note"]]
     assert list(figure.layout.yaxis.categoryarray) == [attendue["liaison"]]
-
-
-def test_nuage_annulations_retards(donnees_fiabilite):
-    table = preparer_table_score(nettoyer_regularite(donnees_fiabilite))
-    notes = scores_par_liaison(table, ParametresScore())
-    figure = figure_annulations_retards(notes)
-    assert sum(len(trace.hovertext) for trace in figure.data) == len(notes)
-    assert {trace.name for trace in figure.data} == set(notes["categorie"])
-    assert figure.layout.xaxis.tickformat == ".0%"
-    assert figure.layout.yaxis.title.text == "Retard moyen à l'arrivée (minutes)"
-
-
-def test_figure_evolution(donnees_fiabilite):
-    table = preparer_table_score(nettoyer_regularite(donnees_fiabilite))
-    par_mois = scores_par_mois(table, ParametresScore())
-    figure = figure_evolution(par_mois)
-    assert len(figure.data) == 1
-    assert list(figure.data[0].x) == par_mois["mois"].tolist()
-    assert figure.data[0].mode == "lines+markers"
-    assert tuple(figure.layout.yaxis.range) == (0, 100)

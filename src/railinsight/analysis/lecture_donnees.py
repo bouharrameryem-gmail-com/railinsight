@@ -1,9 +1,10 @@
-"""Lecture et validation du fichier CSV SNCF."""
+"""Lecture et validation d'un CSV SNCF local ou de son export API en mémoire."""
 
 import logging
 import re
 import unicodedata
 from pathlib import Path
+from typing import TextIO
 
 import pandas as pd
 
@@ -17,16 +18,6 @@ NOMBRE = "nombre"
 SEPARATEUR = ";"
 
 
-def comparer_colonnes(chemin: str | Path) -> tuple[list[str], list[str]]:
-    """Compare les colonnes du CSV à celles définies dans le schéma."""
-    en_tetes = list(_lire_csv(chemin).columns)
-    vus = {normaliser(nom) for nom in en_tetes}
-    connus = {normaliser(c.source) for c in SCHEMA}
-    hors_schema = [nom for nom in en_tetes if normaliser(nom) not in connus]
-    manquantes = [c.source for c in SCHEMA if normaliser(c.source) not in vus]
-    return hors_schema, manquantes
-
-
 def normaliser(texte: str) -> str:
     """Normalise un texte pour faciliter la comparaison des noms de colonnes."""
     decompose = unicodedata.normalize("NFKD", texte.casefold())
@@ -34,11 +25,12 @@ def normaliser(texte: str) -> str:
     return re.sub(r"[^a-z0-9]+", " ", sans_accents).strip()
 
 
-def lire_donnees(chemin: str | Path) -> pd.DataFrame:
+def lire_donnees(chemin: str | Path | TextIO) -> pd.DataFrame:
     """Lit le CSV, vérifie son schéma et convertit les colonnes.
 
     Les colonnes renvoyées portent les noms et types définis dans SCHEMA.
     Les valeurs numériques invalides sont remplacées par NaN.
+    Accepte un chemin local (site et notebooks) ou un flux texte.
     """
     brut = _lire_csv(chemin)
     en_tetes = {normaliser(nom): nom for nom in brut.columns}
@@ -57,7 +49,7 @@ def lire_donnees(chemin: str | Path) -> pd.DataFrame:
     return pd.DataFrame(colonnes)
 
 
-def _lire_csv(chemin: str | Path) -> pd.DataFrame:
+def _lire_csv(chemin: str | Path | TextIO) -> pd.DataFrame:
     """Lit le CSV en texte et traduit les erreurs de lecture."""
     try:
         return pd.read_csv(

@@ -2,12 +2,17 @@
 
 import pytest
 
+from railinsight.analysis.nettoyage import nettoyer_regularite
 from railinsight.backend import fiabilite
 from railinsight.exceptions import DonneesInvalides
 
 
 def test_chargement_conserve_tous_les_services(monkeypatch, donnees_fiabilite):
-    monkeypatch.setattr(fiabilite, "charger_donnees", lambda: donnees_fiabilite)
+    monkeypatch.setattr(
+        fiabilite,
+        "charger_donnees_nettoyees",
+        lambda: nettoyer_regularite(donnees_fiabilite),
+    )
     table = fiabilite.charger_table_score()
     assert set(table["service"]) == {"National", "International"}
     janvier = fiabilite.analyser_fiabilite(table, "2024-01", "2024-01")
@@ -35,7 +40,11 @@ def test_chargement_conserve_tous_les_services(monkeypatch, donnees_fiabilite):
 def test_periode_ou_seuil_inutilisable(
     monkeypatch, donnees_fiabilite, debut, fin, minimum
 ):
-    monkeypatch.setattr(fiabilite, "charger_donnees", lambda: donnees_fiabilite)
+    monkeypatch.setattr(
+        fiabilite,
+        "charger_donnees_nettoyees",
+        lambda: nettoyer_regularite(donnees_fiabilite),
+    )
     with pytest.raises(DonneesInvalides):
         fiabilite.analyser_fiabilite(
             fiabilite.charger_table_score(), debut, fin, min_trains=minimum
@@ -44,6 +53,10 @@ def test_periode_ou_seuil_inutilisable(
 
 def test_aucune_donnee_utilisable(monkeypatch, donnees_fiabilite):
     donnees_fiabilite["prevus"] = 0
-    monkeypatch.setattr(fiabilite, "charger_donnees", lambda: donnees_fiabilite)
+    monkeypatch.setattr(
+        fiabilite,
+        "charger_donnees_nettoyees",
+        lambda: nettoyer_regularite(donnees_fiabilite),
+    )
     with pytest.raises(DonneesInvalides, match="Aucune donnée utilisable"):
         fiabilite.charger_table_score()

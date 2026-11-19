@@ -123,19 +123,3 @@ def scores_par_liaison(
     liaisons = calculer_score(totaux[totaux["prevus"] >= min_trains], parametres)
     liaisons = liaisons.dropna(subset=["note"])
     return liaisons.sort_values("note", ascending=False).reset_index(drop=True)
-
-
-def scores_par_mois(table: pd.DataFrame, parametres: ParametresScore) -> pd.DataFrame:
-    """Note de l'ensemble des lignes de `table`, mois par mois."""
-    totaux = table.groupby("mois", as_index=False)[COLONNES_TOTAUX].sum()
-    return calculer_score(totaux, parametres)
-
-
-def resume_reseau(liaisons: pd.DataFrame, parametres: ParametresScore) -> pd.Series:
-    """Taux d'annulation, retard moyen et note de l'ensemble des liaisons.
-
-    Calculé sur les totaux : une liaison très desservie pèse plus qu'une liaison
-    peu desservie. Ce n'est donc pas la moyenne des notes.
-    """
-    totaux = liaisons[COLONNES_TOTAUX].sum().to_frame().T
-    return calculer_score(totaux, parametres).iloc[0]

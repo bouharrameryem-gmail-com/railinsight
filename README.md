@@ -2,7 +2,7 @@
 
 Streamlit web application for exploring SNCF TGV punctuality data (open data, 2018 – present).
 
-Built as part of a data science project at Télécom Paris. The current analyses study TGV reliability from monthly route-level data. A fifth question on delay prediction is in progress and is not yet integrated into the application.
+Built as part of a data science project at Télécom Paris. The four analyses study TGV reliability from monthly route-level data.
 
 ---
 
@@ -24,7 +24,6 @@ See `DATASHEET.md` for full documentation of the dataset and its limitations.
 | 2 | Which departure stations concentrate delays vs. cascade victims? | Éric |
 | **3** | **Can routes be clustered by punctuality profile?** | **Bachelard** |
 | 4 | Reliability score per route, mapped on the network | Meryem |
-| 5 | Predicting delay > 15 / 30 min from month and route | In progress; not yet integrated |
 
 ---
 
@@ -37,7 +36,7 @@ See `DATASHEET.md` for full documentation of the dataset and its limitations.
 ├── config/defaut.yaml          # Validated default analysis parameters
 ├── data/
 │   ├── raw/                    # Source CSV, never modified
-│   └── processed/              # Reserved for derived outputs; pipeline not implemented yet
+│   └── processed/              # Optional prepared, cleaned Parquet data
 ├── models/                     # Trained model artefacts
 ├── notebooks/                  # Exploratory analysis (Jupyter, standalone)
 ├── docs/                       # Sphinx documentation (scaffold)
@@ -77,17 +76,17 @@ Exploration and question-specific analyses. Older notebooks often read the raw C
 page presents its ranking, trends, sensitivity checks and duration-adjusted results.
 
 ### `railinsight.analysis`
-Feature engineering and analysis functions. The shared Parquet pipeline and model-writing
-workflow are planned, not implemented. No Streamlit dependency; covered by pytest.
+Feature engineering and analysis functions used by the app and notebooks.
+No Streamlit dependency; covered by pytest.
 
 ### `railinsight.backend`
-Loads schema-validated source data and orchestrates analysis for the UI.
-No Streamlit dependency; unit-tested with pytest.
+Loads schema-validated local data, caches it with Streamlit, and orchestrates
+analysis for the UI. Unit-tested with pytest.
 
 ### `railinsight.ui.pages`
-Contains the home page, the Q1–Q4 pages, reusable templates, and a component demo. The target
-pattern is one page entry point per analysis, delegating data work to the backend/provider.
-Shared widgets go in `ui.components`.
+Contains the home page and the Q1–Q4 pages. Each analysis page delegates data work
+to the backend and uses the shared page layout and components.
+Unused demo pages and prototype components have been removed from the finished project.
 
 ### `railinsight.viz`
 Functions that take a DataFrame and return a Plotly figure.
@@ -219,8 +218,34 @@ The project is configured for **Streamlit Cloud**.
 
 1. Push to `main`.
 2. Streamlit Cloud picks up `app.py` automatically.
-3. The application reads the tracked CSV through the configured project path. No
-   `RAILINSIGHT_DATA_PATH` secret is currently read by the code.
+3. The website reads the tracked `data/raw/regularite-mensuelle-tgv-aqst.csv`.
+   No API connection or secret is needed to load the data.
+
+### Local data and faster loading
+
+- **Website and notebooks** use the same local CSV. The sidebar shows the last
+  month included, not the current month or an API retrieval date.
+- The website caches data and page calculations across visitors. Opening a new
+  session does not clear other visitors' caches. The homepage does not import
+  the clustering libraries.
+- Optionally prepare the cleaned data before starting the website:
+
+  ```bash
+  uv run python -m railinsight.backend.dataloader
+  ```
+
+  This creates `data/processed/clean_monthly.parquet`, preserving column types.
+  The website uses it if it is newer than the raw CSV and cleaning code.
+  Otherwise it cleans the CSV once in memory. Q1, Q3, Q4 and the homepage share
+  this cleaned table; Q2 keeps its own raw-data cleaning rules.
+  The generated file is ignored by Git and is optional on Streamlit Cloud.
+- To update the dataset, replace the raw CSV with an export using the same SNCF
+  columns, rerun the preparation command if desired, then **restart the app** to
+  clear all in-memory calculations. For Streamlit Cloud, commit and push the
+  updated raw CSV, then reboot the app. No automatic downloads run in the background.
+- Streamlit Cloud may still need time to wake an inactive app; these changes
+  remove the API wait, not the hosting cold start.
+- These are **monthly aggregate data**, not real-time train predictions.
 
 ---
 
