@@ -2,7 +2,7 @@
 
 Streamlit web application for exploring SNCF TGV punctuality data (open data, 2018 – present).
 
-Built as part of a data science project at Télécom Paris. The current analyses study TGV reliability from monthly route-level data. A fifth question on delay prediction is in progress and is not yet integrated into the application.
+Built as part of a data science project at Télécom Paris. The four analyses study TGV reliability from monthly route-level data, including an exploratory monthly reliability forecast in Q1.
 
 ---
 
@@ -18,13 +18,35 @@ See `DATASHEET.md` for full documentation of the dataset and its limitations.
 
 ## Analyses
 
+### Accueil
+
+L'accueil présente les quatre analyses au même niveau, avant le bilan du réseau
+et la carte.
+Les indicateurs portent sur les **TGV nationaux** et une fenêtre calendaire de
+12 mois se terminant au dernier mois disponible, avec dates affichées.
+Le nombre de liaisons compte les paires de gares, deux sens regroupés, avec du
+trafic dans cette fenêtre. Les taux sont des **ratios de sommes** sur les seules
+lignes aux comptes appariés valides ; les exclusions sont signalées.
+Les variations en points comparent les 12 mois précédents uniquement lorsque la
+couverture mois de l'année/départ/arrivée est identique pour l'indicateur.
+Sinon, la comparaison est indiquée indisponible ; aucun mois n'est extrapolé.
+
+Une carte géographique interactive reprend cette fenêtre nationale : filtre par
+gare, zoom et détails au survol. Les deux sens sont regroupés et la couleur montre
+le ratio `(annulations + retards > 15 min) / trains prévus` sur les comptes valides.
+Les seuils 10 % et 20 % sont de simples repères visuels, pas des normes SNCF.
+Les traits relient directement les gares, sans représenter les voies réelles.
+Le référentiel local de coordonnées est partagé avec la carte Q3 ; les connexions
+non localisées sont signalées et restent dans le tableau accessible associé.
+Le fond OpenStreetMap requiert un accès réseau, sans clé API. La couverture en
+mois mesurés est indiquée pour chaque liaison ; ce taux n'est pas une prévision.
+
 | # | Question | Author / status |
 |---|---|---|
 | 1 | Which routes are least reliable, and is this worsening over time? | Michelle |
 | 2 | Which departure stations concentrate delays vs. cascade victims? | Éric |
 | **3** | **Can routes be clustered by punctuality profile?** | **Bachelard** |
 | 4 | Reliability score per route, mapped on the network | Meryem |
-| 5 | Predicting delay > 15 / 30 min from month and route | In progress; not yet integrated |
 
 ---
 
@@ -167,7 +189,7 @@ n'anticipe pas les événements exceptionnels. Les trois estimations apparaissen
 en cartes, avec leur écart à la référence saisonnière. Le graphique permet de
 choisir 12 mois, 24 mois ou les 48 mois disponibles et de masquer la référence.
 Les valeurs détaillées et la méthode sont repliées ; un résumé de l'erreur reste
-visible. Cette extension de Q1 est distincte de Q5, toujours en cours.
+visible.
 
 ### Q4 : score de fiabilité
 
