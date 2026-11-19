@@ -18,16 +18,6 @@ NOMBRE = "nombre"
 SEPARATEUR = ";"
 
 
-def comparer_colonnes(chemin: str | Path) -> tuple[list[str], list[str]]:
-    """Compare les colonnes du CSV à celles définies dans le schéma."""
-    en_tetes = list(_lire_csv(chemin).columns)
-    vus = {normaliser(nom) for nom in en_tetes}
-    connus = {normaliser(c.source) for c in SCHEMA}
-    hors_schema = [nom for nom in en_tetes if normaliser(nom) not in connus]
-    manquantes = [c.source for c in SCHEMA if normaliser(c.source) not in vus]
-    return hors_schema, manquantes
-
-
 def normaliser(texte: str) -> str:
     """Normalise un texte pour faciliter la comparaison des noms de colonnes."""
     decompose = unicodedata.normalize("NFKD", texte.casefold())
@@ -40,7 +30,7 @@ def lire_donnees(chemin: str | Path | TextIO) -> pd.DataFrame:
 
     Les colonnes renvoyées portent les noms et types définis dans SCHEMA.
     Les valeurs numériques invalides sont remplacées par NaN.
-    Accepte un chemin local (notebooks) ou un flux texte (export API du site).
+    Accepte un chemin local (site et notebooks) ou un flux texte.
     """
     brut = _lire_csv(chemin)
     en_tetes = {normaliser(nom): nom for nom in brut.columns}

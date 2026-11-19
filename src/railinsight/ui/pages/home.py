@@ -9,7 +9,7 @@ import logging
 
 import streamlit as st
 
-from railinsight.backend.profils_ponctualite import charger_donnees_clean
+from railinsight.backend.dataloader import charger_donnees_clean
 from railinsight.ui.components.kpi_card import kpi_row
 from railinsight.ui.theme.css import inject_global_css
 from railinsight.ui.theme.tokens import QUESTION_COLORS
@@ -190,7 +190,9 @@ def _render_about() -> None:
     with st.expander("Qualité des données et méthodologie", expanded=False):
         st.markdown(
             "Les données proviennent du jeu open data SNCF "
-            "*Régularité mensuelle TGV (AQST)*, mis à jour mensuellement."
+            "*Régularité mensuelle TGV (AQST)*. "
+            "Le site utilise un CSV local, mis à jour manuellement ; "
+            "le dernier mois inclus est indiqué dans la barre latérale."
         )
     st.markdown(
         '<div style="text-align:center;margin-top:40px;">'

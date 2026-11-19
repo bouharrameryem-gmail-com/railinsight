@@ -1,15 +1,11 @@
 """Construction et analyse des indicateurs de ponctualité pour le clustering."""
 
-import logging
 from typing import Literal
 
-import numpy as np
 import pandas as pd
 
 from railinsight.analysis.nettoyage import retirer_mois, taux
 from railinsight.exceptions import InsufficientDataError
-
-logger = logging.getLogger(__name__)
 
 Exclusion = Literal["none", "known", "data"]
 
@@ -37,11 +33,6 @@ FEATURE_SETS: dict[str, list[str]] = {
     ],
 }
 
-ALL_FEATURE_COLS: list[str] = sorted(
-    {col for cols in FEATURE_SETS.values() for col in cols}
-    | {"late30_rate", "late60_rate"}
-)
-
 MOIS_EXCEPTIONNELS: frozenset[str] = frozenset(
     {
         "2018-04",
@@ -68,7 +59,6 @@ COMPTES = [
 
 MIN_LIGNES_VALIDES = 5  # en dessous, une corrélation ou un ratio n'a pas de sens
 _MIN_LIAISONS = 2
-_SEUIL_CORRELATION_DUREE = 0.3
 _SEUIL_REDONDANCE = 0.85
 
 
@@ -157,33 +147,6 @@ def construire_indicateurs_liaison(
             "Réduisez le seuil minimum ou changez la règle d'exclusion."
         )
     return indicateurs
-
-
-def corriger_effet_duree(
-    features: pd.DataFrame,
-    cols: list[str],
-) -> tuple[pd.DataFrame, dict[str, float]]:
-    """Corrige les indicateurs présentant une corrélation avec la durée du trajet."""
-    result = features.copy()
-    log_dur = np.log(features["trip_duration_min"].clip(lower=1))
-    mean_log_dur = float(log_dur.mean())
-    slopes: dict[str, float] = {}
-
-    for col in cols:
-        if col not in features.columns:
-            continue
-        valid = features[col].notna() & log_dur.notna()
-        if valid.sum() < MIN_LIGNES_VALIDES:
-            continue
-        rho = float(log_dur[valid].corr(features.loc[valid, col], method="spearman"))
-        if abs(rho) < _SEUIL_CORRELATION_DUREE:
-            continue
-        slope = float(np.polyfit(log_dur[valid], features.loc[valid, col], 1)[0])
-        slopes[col] = slope
-        result[f"{col}_adj"] = features[col] - slope * (log_dur - mean_log_dur)
-        logger.debug("%s corrigé de la durée (ρ=%.2f, pente=%.4f)", col, rho, slope)
-
-    return result, slopes
 
 
 def detect_redundancy(

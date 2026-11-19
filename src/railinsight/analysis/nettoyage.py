@@ -3,7 +3,7 @@
 Deux familles de fonctions :
 
 - des outils génériques, utilisables sur n'importe quelle colonne
-  (normaliser_nom, convertir_mois, taux, invalider_hors_bornes, retirer_doublons,
+  (normaliser_nom, convertir_mois, taux, invalider_hors_bornes,
   filtrer_periode, retirer_mois) ;
 - des règles propres au jeu de données SNCF (filtrer_service, ajouter_liaison,
   ajouter_minutes_retard, retirer_sans_train, nettoyer_regularite).
@@ -75,17 +75,6 @@ def invalider_hors_bornes(
             maximum,
         )
     return serie.mask(hors)
-
-
-def retirer_doublons(df: pd.DataFrame, cle: list[str]) -> pd.DataFrame:
-    """Supprime les doublons en conservant la dernière occurrence."""
-    unique = df.drop_duplicates(subset=cle, keep="last").reset_index(drop=True)
-    retirees = len(df) - len(unique)
-    if retirees:
-        logger.warning(
-            "%d ligne(s) en double retirée(s) (clé : %s)", retirees, ", ".join(cle)
-        )
-    return unique
 
 
 def filtrer_periode(

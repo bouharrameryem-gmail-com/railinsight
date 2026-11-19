@@ -84,14 +84,6 @@ railinsight.analysis.shema module
    :show-inheritance:
    :undoc-members:
 
-railinsight.analysis.validation\_clustering module
---------------------------------------------------
-
-.. automodule:: railinsight.analysis.validation_clustering
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
 Module contents
 ---------------
 

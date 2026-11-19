@@ -18,12 +18,7 @@ from railinsight.analysis.indicateurs_liaisons import (
     construire_indicateurs_liaison,
     detect_redundancy,
 )
-from railinsight.analysis.nettoyage import (
-    filtrer_periode,
-    filtrer_service,
-    nettoyer_regularite,
-)
-from railinsight.backend.dataloader import charger_donnees
+from railinsight.analysis.nettoyage import filtrer_periode
 from railinsight.exceptions import DonneesInvalides
 
 _JEU_PAR_DEFAUT = "v3"
@@ -56,11 +51,6 @@ class ResultatClustering:
     noms_clusters: dict[int, str]
     pca_coordonnees: np.ndarray
     redondances: list[tuple[str, str, float]]
-
-
-def charger_donnees_clean() -> pd.DataFrame:
-    """Charge et nettoie les données SNCF (service national uniquement)."""
-    return filtrer_service(nettoyer_regularite(charger_donnees()))
 
 
 def construire_indicateurs(
