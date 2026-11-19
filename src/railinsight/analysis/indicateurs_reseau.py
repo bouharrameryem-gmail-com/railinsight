@@ -1,5 +1,4 @@
-"""Indicateurs du réseau TGV pour la page d'accueil.
-"""
+"""Indicateurs du réseau TGV pour la page d'accueil."""
 
 import logging
 from dataclasses import dataclass

@@ -1,6 +1,8 @@
 import pandas as pd
 import pytest
+
 from railinsight.analysis.shema import NOMBRE, SCHEMA
+
 
 @pytest.fixture
 def donnees_fiabilite():
@@ -55,7 +57,6 @@ def raw():
             for d, s, g, r, p in rows
         ]
     )
-
 
 
 LIGNES_RESEAU = [
