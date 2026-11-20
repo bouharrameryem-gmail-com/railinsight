@@ -121,7 +121,7 @@ Generic helpers (date parsing, formatting…). No mocks needed in tests.
 uv sync
 
 # Run the app
-uv run streamlit run app.py
+uv run streamlit ./app.py
 
 # Lint and formatting
 uv run ruff check .
@@ -136,9 +136,11 @@ uv run sphinx-build -W -b html docs/source docs/build/html
 ### Configuration
 
 Defaults are in `config/defaut.yaml` and loaded with `railinsight.config.charger_config()`.
-The current file defines the project seed, data paths, and Q4 (`score_fiabilite`) parameters.
-To override selected values, set `RAILINSIGHT_CONFIG` to a YAML file relative to the repository
-root; unknown or invalid keys raise `ConfigInvalide`.
+The file defines the project seed, data paths, and Q4 (`score_fiabilite`) parameters.
+Q4 currently uses its defaults from `ParametresScore` and its page controls, rather than
+reading the Q4 values from YAML. Other configuration overrides can be set with
+`RAILINSIGHT_CONFIG` pointing to a YAML file relative to the repository root; unknown or
+invalid keys raise `ConfigInvalide`.
 
 ```yaml
 # local.yaml
@@ -253,24 +255,26 @@ est étudié.
 
 ### Q4 : score de fiabilité
 
-La page affiche le schéma du réseau du notebook `notebooks/Q4_score_fiabilite.ipynb`.
-Une seule page avec trois onglets : réseau complet, classements et match de
-deux liaisons. Le dessin n'est pas une carte géographique.
+Q4 attribue une note de 0 à 100 aux liaisons TGV selon la période et la priorité
+choisies. Les deux sens d'une liaison sont regroupés et tous les services sont
+inclus. La page comporte trois onglets :
 
-La période et la priorité du voyageur actualisent toutes les notes. Par défaut,
-annulations et retards comptent autant ; choisir une priorité donne un poids de
-75 % à ce critère et de 25 % à l'autre. Le backend existant est inchangé.
+- **Le réseau** : schéma du réseau calculé, non géographique. Filtrez les liaisons
+  affichées par catégorie et survolez un trait pour voir ses indicateurs.
+- **Le classement** : les 5, 10 ou 15 meilleures et moins bonnes notes.
+- **Le match des trajets** : comparez les indicateurs de deux liaisons puis révélez
+  leurs notes.
 
-Dans « Le réseau », survoler le milieu d'un trait affiche les indicateurs ;
-le filtre « Quelles liaisons afficher ? » permet de choisir une ou plusieurs
-couleurs/catégories. Il ne change ni les notes, ni les positions des gares,
-ni les classements et le match. Une sélection vide ou sans liaison affiche
-un message explicite. Cliquer sur la légende masque aussi une catégorie.
-Le volet « Code source simplifié » montre un exemple du dessin du réseau,
-sans les détails au survol, à partir des données et notes déjà préparées.
-« Le classement » présente les
-meilleures et les moins bonnes notes. « Le match des trajets » permet de comparer
-les indicateurs de deux liaisons avant de révéler leurs notes.
+Les pénalités d'annulation et de retard moyen à l'arrivée atteignent leur maximum
+à 6 % et 12 minutes. Leur poids est égal par défaut ; la priorité choisie passe
+à 75 %, l'autre à 25 %. Une liaison doit compter au moins 100 trains prévus et
+avoir un retard mesuré. Ce sont des seuils d'analyse, pas une note officielle SNCF
+ni une prévision. Les catégories sont : Très fiable (85–100), Fiable (70–<85),
+Moyenne (55–<70), Peu fiable (40–<55), À risque (<40).
+
+Les lignes sans train prévu, avec un nombre d'annulations invalide ou un mois ou
+une gare manquante sont exclues. Les retards inférieurs à -15 minutes sont traités
+comme manquants.
 
 | Fichier | Rôle |
 |---|---|
@@ -281,17 +285,9 @@ les indicateurs de deux liaisons avant de révéler leurs notes.
 | `src/railinsight/ui/pages/q4_score_fiabilite.py` | Textes, filtres et affichage Streamlit |
 | `app.py` | Inscription dans la navigation |
 
-La note reprend par défaut les réglages du notebook : poids égaux, plafond de 6 %
-d'annulations, plafond de 12 minutes de retard et minimum de 100 trains par liaison.
-Le retard agrégé est pondéré par le nombre de trains dont le retard est connu.
-
-Différences de nettoyage : les annulations invalides et les lignes sans mois ou
-gare sont écartées ; un retard inférieur à -15 minutes devient manquant.
-Une liaison sans retard mesuré n'est pas notée. Les anomalies de nettoyage
-sont journalisées.
-
-Pour adapter la présentation, modifier la page ; pour adapter les seuils, modifier
-`ParametresScore` et mettre à jour le texte « Méthode et limites ».
+Le retard moyen agrégé est pondéré par le nombre de trains dont le retard est
+mesuré. Pour modifier les seuils, mettre à jour `ParametresScore` et le texte
+« Méthode et limites » de la page.
 
 ---
 
