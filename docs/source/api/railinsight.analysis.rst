@@ -20,6 +20,14 @@ railinsight.analysis.clustering module
    :show-inheritance:
    :undoc-members:
 
+railinsight.analysis.geometrie module
+-------------------------------------
+
+.. automodule:: railinsight.analysis.geometrie
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 railinsight.analysis.graphe\_reseau module
 ------------------------------------------
 
@@ -32,6 +40,14 @@ railinsight.analysis.indicateurs\_liaisons module
 -------------------------------------------------
 
 .. automodule:: railinsight.analysis.indicateurs_liaisons
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+railinsight.analysis.indicateurs\_reseau module
+-----------------------------------------------
+
+.. automodule:: railinsight.analysis.indicateurs_reseau
    :members:
    :show-inheritance:
    :undoc-members:
@@ -64,6 +80,14 @@ railinsight.analysis.prevision\_fiabilite module
 ------------------------------------------------
 
 .. automodule:: railinsight.analysis.prevision_fiabilite
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+railinsight.analysis.recit\_gares module
+----------------------------------------
+
+.. automodule:: railinsight.analysis.recit_gares
    :members:
    :show-inheritance:
    :undoc-members:

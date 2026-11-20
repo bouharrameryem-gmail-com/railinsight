@@ -4,6 +4,14 @@ railinsight.viz package
 Submodules
 ----------
 
+railinsight.viz.accueil module
+------------------------------
+
+.. automodule:: railinsight.viz.accueil
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 railinsight.viz.fiabilite module
 --------------------------------
 
