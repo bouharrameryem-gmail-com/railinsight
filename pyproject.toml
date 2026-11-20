@@ -1,10 +1,13 @@
 [project]
 name = "railinsight"
 version = "0.1.0"
-description = "Add your description here"
+description = "Application Streamlit d'analyse de la régularité mensuelle des TGV (données SNCF AQST)"
 readme = "README.md"
 authors = [
-    { name = "Jonathan Fomekong", email = "jonathabachelard@gmail.com" }
+    { name = "Michelle" },
+    { name = "Éric Koghene Ladzou", email = "erickoghene@gmail.com" },
+    { name = "Jonathan Fomekong", email = "jonathabachelard@gmail.com" },
+    { name = "Meryem" },
 ]
 requires-python = ">=3.14"
 dependencies = [
