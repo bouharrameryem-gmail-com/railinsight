@@ -1,18 +1,23 @@
-.. railinsight documentation master file, created by
-   sphinx-quickstart on Sat Oct 31 18:27:43 2026.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+Documentation de RailInsight
+============================
 
-railinsight documentation
-=========================
+RailInsight est une application Streamlit qui analyse la régularité mensuelle
+des TGV à partir des données ouvertes de la SNCF (jeu AQST). Elle répond à
+quatre questions, de la fiabilité des liaisons à leur note sur le réseau, et
+les présente sous la forme d'une seule enquête.
 
-Documentation du projet RailInsight.
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-
+Cette documentation explique comment installer et utiliser le projet, puis
+décrit chaque module du paquet ``railinsight``.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Guide
+
+   installation
+   utilisation
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Référence
 
    api/modules
-
