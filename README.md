@@ -1,73 +1,82 @@
 # RailInsight
 
-Streamlit web application for exploring SNCF TGV punctuality data (open data, 2018 – present).
+Application web Streamlit permettant d'explorer les données de ponctualité des TGV SNCF
+(données ouvertes, de 2018 à aujourd'hui).
 
-Built as part of a data science project at Télécom Paris. The four analyses study TGV reliability from monthly route-level data.
+Réalisée dans le cadre d'un projet de science des données à Télécom Paris. Les quatre
+analyses étudient la fiabilité des TGV à partir de données mensuelles par liaison.
 
 ---
 
-## Data source
+## Source des données
 
 **SNCF — Régularité mensuelle TGV (AQST)**
 [ressources.data.sncf.com](https://ressources.data.sncf.com/explore/dataset/regularite-mensuelle-tgv-aqst/)
 
-One row = one month × one route (departure → arrival). ~13 000 rows, 2018-01 → present.
-See `DATASHEET.md` for full documentation of the dataset and its limitations.
+Une ligne = un mois × une liaison (départ → arrivée). Environ 13 000 lignes, de 2018-01
+à aujourd'hui. Voir `DATASHEET.md` pour la documentation complète du jeu de données et
+de ses limites.
 
-**Reference data for the landing page map** (`data/reference/`)
+**Données de référence pour la carte de la page d'accueil** (`data/reference/`)
 
-- `gares_coordonnees.csv`: GPS coordinates of the TGV stations, written by hand with the station names used in the AQST dataset. Stations missing from this file are logged and left off the map.
-- `reseau_lgv.geojson`: simplified track of the high-speed lines, from SNCF Réseau ([Lignes LGV et par écartement](https://ressources.data.sncf.com/explore/dataset/lignes-lgv-et-par-ecartement/), ODbL licence). Regenerate it with:
+- `gares_coordonnees.csv` : coordonnées GPS des gares TGV, saisies à la main avec les noms
+  de gares utilisés dans le jeu de données AQST. Les gares absentes de ce fichier sont
+  consignées dans les journaux et ne figurent pas sur la carte.
+- `reseau_lgv.geojson` : tracé simplifié des lignes à grande vitesse, fourni par SNCF
+  Réseau ([Lignes LGV et par écartement](https://ressources.data.sncf.com/explore/dataset/lignes-lgv-et-par-ecartement/),
+  licence ODbL). Pour le régénérer :
 
 ```bash
 uv run python scripts/telecharger_reseau_lgv.py
 ```
 
-The app only reads these files: it never calls an external API at runtime.
+L'application lit uniquement ces fichiers : elle n'appelle aucune API externe à
+l'exécution.
 
 ---
 
 ## Analyses
 
-| # | Question | Author / status |
+| # | Question | Auteur / état |
 |---|---|---|
-| 1 | Which routes are least reliable, and is this worsening over time? | Michelle |
-| 2 | Which departure stations concentrate delays vs. cascade victims? | Éric |
-| **3** | **Can routes be clustered by punctuality profile?** | **Bachelard** |
-| 4 | Reliability score per route, mapped on the network | Meryem |
+| 1 | Quelles liaisons sont les moins fiables, et leur fiabilité se dégrade-t-elle avec le temps ? | Michelle |
+| 2 | Quelles gares de départ concentrent les retards ou en subissent les effets en cascade ? | Éric |
+| **3** | **Peut-on regrouper les liaisons selon leur profil de ponctualité ?** | **Bachelard** |
+| 4 | Score de fiabilité par liaison, représenté sur le réseau | Meryem |
 
-The landing page presents the four questions as one investigation, from the observation (Q1) to the verdict (Q4).
+La page d'accueil présente les quatre questions comme une seule enquête, de l'observation
+(Q1) à la conclusion (Q4).
 
 ---
 
-## Project structure
+## Structure du projet
 
 ```
 .
-├── app.py                      # Streamlit entry point (navigation only)
-├── .streamlit/config.toml      # Streamlit server/client configuration
-├── config/defaut.yaml          # Validated default analysis parameters
+├── app.py                      # Point d'entrée Streamlit (navigation uniquement)
+├── .streamlit/config.toml      # Configuration du serveur et du client Streamlit
+├── config/defaut.yaml          # Paramètres d'analyse par défaut validés
 ├── data/
-│   ├── raw/                    # Source CSV, never modified
-│   ├── reference/              # Station coordinates and LGV network (landing page map)
-│   └── processed/              # Optional prepared, cleaned Parquet data
-├── models/                     # Trained model artefacts
-├── notebooks/                  # Exploratory analysis (Jupyter, standalone)
-├── scripts/                    # One-off data preparation scripts
-├── docs/                       # Sphinx documentation (API reference)
-├── logs/                       # Runtime logs (debug.log, errors.log)
+│   ├── raw/                    # CSV d'origine, jamais modifié
+│   ├── reference/              # Coordonnées des gares et réseau LGV (carte de la page d'accueil)
+│   └── processed/              # Données Parquet préparées et nettoyées (facultatif)
+├── models/                     # Artefacts des modèles entraînés
+├── notebooks/                  # Analyses exploratoires (Jupyter, autonomes)
+├── scripts/                    # Scripts ponctuels de préparation des données
+├── docs/                       # Documentation Sphinx (référence de l'API)
+├── logs/                       # Journaux d'exécution (debug.log, errors.log)
 ├── src/railinsight/
-│   ├── config.py               # Paths, column mapping, constants
-│   ├── exceptions.py           # Custom exceptions
-│   ├── logging_config.py       # Two rotating file handlers + console
-│   ├── analysis/               # Data reading, cleaning, network indicators, Q1 reliability, Q2 causes, Q3 clustering, Q4 score
-│   ├── backend/                # Validated data loading and orchestration of the landing page and Q1–Q4
-│   ├── viz/                    # Reusable figure builders
-│   ├── utils/                  # Generic helpers
+│   ├── config.py               # Chemins, correspondance des colonnes, constantes
+│   ├── exceptions.py           # Exceptions personnalisées
+│   ├── logging_config.py       # Deux gestionnaires de fichiers rotatifs + console
+│   ├── analysis/               # Lecture et nettoyage des données, indicateurs réseau, fiabilité Q1, causes Q2, clustering Q3, score Q4
+│   ├── backend/                # Chargement validé des données et orchestration de l'accueil et de Q1–Q4
+│   ├── viz/                    # Fonctions réutilisables de création de graphiques
+│   ├── utils/                  # Fonctions utilitaires génériques
 │   └── ui/
-│       ├── pages/              # One file per page, no business logic
-│       └── components/         # Reusable Streamlit widgets
-└── tests/railinsight/          # Mirrors src/railinsight/
+│       ├── pages/              # Un fichier par page, sans logique métier
+│       └── components/         # Composants Streamlit réutilisables
+└── tests/railinsight/          # Reprend la structure de src/railinsight/
 ```
 
 ### Architecture
@@ -77,57 +86,62 @@ app.py → ui → backend → analysis
               └───────→ viz
 ```
 
-Streamlit belongs in the UI layer. Analysis and visualization modules should remain usable
-without Streamlit.
+Streamlit appartient à la couche UI. Les modules d'analyse et de visualisation doivent
+rester utilisables sans Streamlit.
 
 ---
 
-## Layers
+## Couches
 
 ### `notebooks/`
-Exploration and question-specific analyses. Older notebooks often read the raw CSV directly;
-`notebook_example.ipynb` demonstrates the validated reader/configuration pattern. The Q1 notebook and Streamlit page use `charger_config()`, `lire_donnees()` and
-`nettoyer_regularite()`. The notebook preserves the full exploratory analysis; the
-page presents its ranking, trends, sensitivity checks and duration-adjusted results.
+Exploration et analyses propres à chaque question. Les anciens notebooks lisent souvent
+directement le CSV brut ; `notebook_example.ipynb` montre le modèle de lecture et de
+configuration validées. Le notebook Q1 et la page Streamlit utilisent
+`charger_config()`, `lire_donnees()` et `nettoyer_regularite()`. Le notebook conserve
+l'analyse exploratoire complète ; la page présente son classement, ses tendances, ses
+analyses de sensibilité et ses résultats ajustés à la durée.
 
 ### `railinsight.analysis`
-Feature engineering and analysis functions used by the app and notebooks.
-No Streamlit dependency; covered by pytest.
+Ingénierie des caractéristiques et fonctions d'analyse utilisées par l'application et les
+notebooks. Aucune dépendance à Streamlit ; tests exécutés avec pytest.
 
 ### `railinsight.backend`
-Loads schema-validated local data, caches it with Streamlit, and orchestrates
-analysis for the UI. Unit-tested with pytest.
+Charge les données locales validées selon leur schéma, les met en cache avec Streamlit et
+orchestre les analyses pour l'interface. Tests unitaires exécutés avec pytest.
 
 ### `railinsight.ui.pages`
-Contains the home page and the Q1–Q4 pages. Each analysis page delegates data work
-to the backend and uses the shared page layout and components.
-Unused demo pages and prototype components have been removed from the finished project.
+Contient la page d'accueil et les pages Q1 à Q4. Chaque page d'analyse délègue le
+traitement des données au backend et utilise la mise en page et les composants partagés.
+Les pages de démonstration inutilisées et les composants prototypes ont été supprimés du
+projet final.
 
 ### `railinsight.viz`
-Functions that take a DataFrame and return a Plotly figure.
-No Streamlit import, so figures are reusable in notebooks too.
+Fonctions qui prennent un DataFrame et renvoient un graphique Plotly.
+Elles n'importent pas Streamlit ; les graphiques sont donc aussi réutilisables dans les
+notebooks.
 
 ### `railinsight.utils`
-Generic helpers (date parsing, formatting…). No mocks needed in tests.
+Fonctions utilitaires génériques (analyse des dates, formatage…). Aucun mock nécessaire
+dans les tests.
 
 ---
 
-## Local development
+## Développement local
 
-**Prerequisites**: Python ≥ 3.14, [uv](https://docs.astral.sh/uv/)
+**Prérequis** : Python ≥ 3.14, [uv](https://docs.astral.sh/uv/)
 
 ```shell
-# Install dependencies and the package in the project environment
+# Installer les dépendances et le paquet dans l'environnement du projet
 uv sync
 
-# Run the app
+# Lancer l'application
 uv run streamlit ./app.py
 
-# Lint and formatting
+# Vérification du code et formatage
 uv run ruff check .
 uv run ruff format --check .
 
-# Tests + branch coverage (CI requires at least 90%)
+# Tests et couverture des branches (la CI exige au moins 90 %)
 uv run pytest --tb=short -q --cov=src/railinsight --cov-report=term-missing --cov-report=xml --cov-fail-under=90
 
 uv run sphinx-build -W -b html docs/source docs/build/html
@@ -135,12 +149,13 @@ uv run sphinx-build -W -b html docs/source docs/build/html
 
 ### Configuration
 
-Defaults are in `config/defaut.yaml` and loaded with `railinsight.config.charger_config()`.
-The file defines the project seed, data paths, and Q4 (`score_fiabilite`) parameters.
-Q4 currently uses its defaults from `ParametresScore` and its page controls, rather than
-reading the Q4 values from YAML. Other configuration overrides can be set with
-`RAILINSIGHT_CONFIG` pointing to a YAML file relative to the repository root; unknown or
-invalid keys raise `ConfigInvalide`.
+Les valeurs par défaut se trouvent dans `config/defaut.yaml` et sont chargées avec
+`railinsight.config.charger_config()`. Le fichier définit la graine du projet, les chemins
+des données et les paramètres de Q4 (`score_fiabilite`). Q4 utilise actuellement les
+valeurs par défaut de `ParametresScore` et les contrôles de sa page, plutôt que de lire
+les valeurs Q4 du fichier YAML. D'autres surcharges de configuration peuvent être
+définies à l'aide de `RAILINSIGHT_CONFIG`, qui pointe vers un fichier YAML relatif à la
+racine du dépôt ; les clés inconnues ou invalides déclenchent `ConfigInvalide`.
 
 ```yaml
 # local.yaml
@@ -151,15 +166,16 @@ score_fiabilite:
 PowerShell: `$env:RAILINSIGHT_CONFIG = "local.yaml"`  
 bash: `export RAILINSIGHT_CONFIG=local.yaml`
 
-### Jupyter notebooks
+### Notebooks Jupyter
 
 ```shell
 uv run jupyter lab
 ```
 
-Notebooks live in `notebooks/`. Follow `notebooks/notebook_example.ipynb` for configuration
-and schema-validated loading. Existing notebooks are not yet fully harmonized; check each
-notebook and its methodology before comparing results.
+Les notebooks se trouvent dans `notebooks/`. Consultez
+`notebooks/notebook_example.ipynb` pour la configuration et le chargement avec validation
+du schéma. Les notebooks existants ne sont pas encore entièrement harmonisés ; vérifiez
+chacun d'eux ainsi que sa méthodologie avant de comparer les résultats.
 
 ### Page d'accueil
 
@@ -291,49 +307,52 @@ mesuré. Pour modifier les seuils, mettre à jour `ParametresScore` et le texte
 
 ---
 
-## Deployment
+## Déploiement
 
-The project is configured for **Streamlit Cloud**.
+Le projet est configuré pour **Streamlit Cloud**.
 
-1. Push to `main`.
-2. Streamlit Cloud picks up `app.py` automatically.
-3. The website reads the tracked `data/raw/regularite-mensuelle-tgv-aqst.csv`.
-   No API connection or secret is needed to load the data.
+1. Envoyez les changements sur `main`.
+2. Streamlit Cloud détecte automatiquement `app.py`.
+3. Le site lit le fichier suivi par Git `data/raw/regularite-mensuelle-tgv-aqst.csv`.
+   Aucune connexion à une API ni aucun secret n'est nécessaire pour charger les données.
 
-### Local data and faster loading
+### Données locales et chargement accéléré
 
-- **Website and notebooks** use the same local CSV. The sidebar shows the last
-  month included, not the current month or an API retrieval date.
-- The website caches data and page calculations across visitors. Opening a new
-  session does not clear other visitors' caches. The homepage does not import
-  the clustering libraries.
-- Optionally prepare the cleaned data before starting the website:
+- **Le site et les notebooks** utilisent le même CSV local. La barre latérale indique le
+  dernier mois inclus, et non le mois en cours ni la date de récupération via une API.
+- Le site met en cache les données et les calculs des pages pour tous les visiteurs.
+  L'ouverture d'une nouvelle session n'efface pas les caches des autres visiteurs. La
+  page d'accueil n'importe pas les bibliothèques de partitionnement.
+- Vous pouvez préparer les données nettoyées avant de lancer le site :
 
   ```bash
   uv run python -m railinsight.backend.dataloader
   ```
 
   This creates `data/processed/clean_monthly.parquet`, preserving column types.
-  The website uses it if it is newer than the raw CSV and cleaning code.
-  Otherwise it cleans the CSV once in memory. Q1, Q3, Q4 and the homepage share
-  this cleaned table; Q2 keeps its own raw-data cleaning rules.
-  The generated file is ignored by Git and is optional on Streamlit Cloud.
-- To update the dataset, replace the raw CSV with an export using the same SNCF
-  columns, rerun the preparation command if desired, then **restart the app** to
-  clear all in-memory calculations. For Streamlit Cloud, commit and push the
-  updated raw CSV, then reboot the app. No automatic downloads run in the background.
-- Streamlit Cloud may still need time to wake an inactive app; these changes
-  remove the API wait, not the hosting cold start.
-- These are **monthly aggregate data**, not real-time train predictions.
+  Le site utilise ce fichier s'il est plus récent que le CSV brut et le code de nettoyage.
+  Sinon, il nettoie le CSV une fois en mémoire. Q1, Q3, Q4 et la page d'accueil partagent
+  cette table nettoyée ; Q2 conserve ses propres règles de nettoyage des données brutes.
+  Le fichier généré est ignoré par Git et reste facultatif sur Streamlit Cloud.
+- Pour mettre à jour le jeu de données, remplacez le CSV brut par un export contenant les
+  mêmes colonnes SNCF, relancez si besoin la commande de préparation, puis **redémarrez
+  l'application** afin d'effacer tous les calculs en mémoire. Sur Streamlit Cloud,
+  validez et poussez le CSV brut mis à jour, puis redémarrez l'application. Aucun
+  téléchargement automatique n'est exécuté en arrière-plan.
+- Streamlit Cloud peut toujours avoir besoin de temps pour réactiver une application
+  inactive ; ces changements suppriment l'attente liée à l'API, pas le démarrage à froid
+  de l'hébergement.
+- Il s'agit de **données agrégées mensuelles**, et non de prévisions de trains en temps réel.
 
 ---
 
-## Contributing
+## Contribution
 
-- Work on a feature branch, open a PR against `main`.
-- CI checks, all blocking: ruff lint and format, docstring presence with
-  interrogate (≥ 80 %), pytest with branch coverage (≥ 90 %), a dependency audit
-  (pip-audit) and the Sphinx build with warnings treated as errors.
-- See `.github/pull_request_template.md` for the PR checklist.
-- Branch and commit conventions, including Python naming rules, are documented in the
-  [project wiki](https://github.com/bouharrameryem-gmail-com/railinsight/wiki/Conventions-de-d%C3%A9veloppement).
+- Travaillez sur une branche dédiée à la fonctionnalité, puis ouvrez une PR vers `main`.
+- Vérifications CI, toutes bloquantes : lint et formatage avec ruff, présence des
+  docstrings vérifiée par interrogate (≥ 80 %), tests pytest avec couverture des branches
+  (≥ 90 %), audit des dépendances (pip-audit) et compilation Sphinx avec les avertissements
+  traités comme des erreurs.
+- Consultez `.github/pull_request_template.md` pour la liste de vérification des PR.
+- Les conventions de branches et de commits, y compris les règles de nommage Python, sont
+  documentées dans le [wiki du projet](https://github.com/bouharrameryem-gmail-com/railinsight/wiki/Conventions-de-d%C3%A9veloppement).
